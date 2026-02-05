@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mufeng Blog Writing"
+  short_description: "Mufeng.blog 技术博客写作风格与质量规范指南"
+  default_prompt: "Use $mufeng-writing-skill to draft a Chinese mufeng.blog technical post with Joey tone, clear structure, and runnable code examples."
