@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mufeng Bilingual Storybook"
+  short_description: "Create bilingual AI picture books from markdown"
+  default_prompt: "Use $mufeng-bilingual-storybook to turn these markdown story materials into Chinese and English picture-book PDFs."

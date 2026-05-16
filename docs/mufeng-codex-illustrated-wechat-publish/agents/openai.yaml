@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mufeng Codex Illustrated WeChat Publish"
+  short_description: "Materials to WeChat with article and images"
+  default_prompt: "Use $mufeng-codex-illustrated-wechat-publish to turn this directory's materials into a professional WeChat article, add Codex-generated PNG cover and illustrations, upload them to GitHub, insert links, and publish."

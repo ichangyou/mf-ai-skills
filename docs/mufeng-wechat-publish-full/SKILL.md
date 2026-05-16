@@ -19,18 +19,20 @@ WeChat's recommendation system (看一看/搜一搜/流量主) surfaces articles
 
 WeChat's algorithm weights the title heavily for initial distribution. For AI tech:
 
-**Winning patterns:**
-- `我用 [工具] 做了 [具体事]，[惊人结果]` — e.g., "我用 Claude 一小时写完了原本三天的需求文档"
-- `[模型/工具名] 的 [N 个] 隐藏用法，99% 的人不知道`
-- `[新模型] 实测：[具体对比维度]` — e.g., "Claude 4 实测：代码能力到底比 GPT-4o 强多少"
-- `[问题场景]，[工具] 给出了让我震惊的答案`
-- 带数字的标题完读率高于无数字标题（如"5 个技巧"优于"一些技巧"）
+**四种有效结构（四选一）：**
+- `[具体工具/场景] + 实测/亲测 + 结论` — e.g., "我用 Claude 做了三个月 AI 助手，说几句真实感受"
+- `[反常识结论] + 原因` — e.g., "别急着学提示词，先搞清楚这件事"
+- `[数字/量化] + 行动 + 收益` — e.g., "10 个让 Claude Code 效率翻倍的使用习惯"
+- `[读者痛点] + 解法` — e.g., "AI 工具用了一年，我踩过的最贵的坑"
+
+带数字的标题完读率高于无数字标题（如"5 个技巧"优于"一些技巧"）。
 
 **Title rules:**
-- 长度：18-24 个汉字（移动端不截断的最优范围）
-- 避免标题党措辞（微信会降权）：不用"震惊""万万没想到""赶紧转"
-- 第一个词尽量是热词：AI、大模型、Claude、GPT、DeepSeek、Cursor 等
+- 长度：18-26 个汉字（含标点），不超过 30 字
+- 避免标题党措辞（微信会降权）：不用"震惊""万万没想到""99% 的人不知道""赶紧转"
+- AI 技术类关键词前置：Claude、MCP、Agent、Cursor、提示词、大模型等核心词放标题前半段，利于搜索收录
 - 不用问号结尾——微信算法对疑问句标题分发更保守
+- 每次输出 3 个标题备选（利益驱动型 / 反常识型 / 代入感型），让作者选择
 
 **Bad → Good examples:**
 - ❌ "分享一些 AI 工具使用心得" → ✓ "用了 3 个月 Cursor，整理出这 8 个真正提效的用法"
@@ -257,7 +259,7 @@ Run through this in order before every publish:
 
 | Stage | Key Rule | Common Mistake |
 |-------|----------|----------------|
-| Content strategy | 标题 18-24 字 + AI 热词；前 150 字直给价值；结尾引导"在看" | 标题模糊无热词；从背景铺垫开篇 |
+| Content strategy | 标题 18-26 字 + AI 热词前置；前 150 字直给价值；结尾引导"在看" | 用标题党措辞；从背景铺垫开篇 |
 | Timing | 工作日 20:00-22:00 发布 | 周一早晨或节假日发 |
 | IP check | Do before any API call | Assuming IP hasn't changed |
 | Image gen | Google/DashScope | Skipping fallback when Google fails |
