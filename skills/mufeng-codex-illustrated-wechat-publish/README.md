@@ -111,7 +111,7 @@ python3 "$HOME/.agents/skills/mufeng-codex-illustrated-wechat-publish/scripts/up
 **Step 7 — 发布到微信**
 
 ```bash
-bun /Users/changyou/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
+bun ~/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
   <article.md> \
   --theme default \
   --author changyou \
@@ -237,7 +237,7 @@ Note: upload script uses `gh api` — GitHub CLI must be installed and authentic
 **Step 7 — Publish to WeChat**
 
 ```bash
-bun /Users/changyou/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
+bun ~/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
   <article.md> \
   --theme default \
   --author changyou \

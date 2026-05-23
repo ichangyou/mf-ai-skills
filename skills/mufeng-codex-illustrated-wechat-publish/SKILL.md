@@ -77,7 +77,7 @@ python3 "$HOME/.agents/skills/mufeng-codex-illustrated-wechat-publish/scripts/up
    - Use the existing baoyu script directly:
 
 ```bash
-bun /Users/changyou/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
+bun ~/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
   <article.md> \
   --theme default \
   --author changyou \
