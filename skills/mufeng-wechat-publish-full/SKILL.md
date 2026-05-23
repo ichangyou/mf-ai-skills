@@ -1,5 +1,5 @@
 ---
-name: wechat-full
+name: mufeng-wechat-publish-full
 description: Use when publishing articles to WeChat Official Account (微信公众号), including tasks that involve generating images, uploading assets to GitHub, converting markdown to HTML, or calling the WeChat API. Also use when any step of a previous WeChat publish attempt failed. Includes AI tech blog content strategy for maximizing WeChat platform recommendation (推荐曝光).
 ---
 
