@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import base64
 import json
-import os
 import posixpath
 import re
 import subprocess
@@ -18,6 +17,9 @@ from urllib.parse import quote
 
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+DEFAULT_REPO = "mf-blog/blogPictures"
+DEFAULT_BRANCH = "main"
+DEFAULT_REMOTE_DIR = "images"
 
 
 def run_gh(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -137,9 +139,9 @@ def upload_one(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("images", nargs="+", help="PNG image files to upload")
-    parser.add_argument("--repo", default=os.getenv("MUFENG_GITHUB_IMAGE_REPO"), help="GitHub repo as owner/name")
-    parser.add_argument("--branch", default=os.getenv("MUFENG_GITHUB_IMAGE_BRANCH", "main"))
-    parser.add_argument("--remote-dir", default=os.getenv("MUFENG_GITHUB_IMAGE_DIR", "images/mufeng"))
+    parser.add_argument("--repo", default=DEFAULT_REPO, help="GitHub repo as owner/name")
+    parser.add_argument("--branch", default=DEFAULT_BRANCH)
+    parser.add_argument("--remote-dir", default=DEFAULT_REMOTE_DIR)
     parser.add_argument("--message", default="add mufeng article images")
     parser.add_argument("--json-out", help="Optional JSON output path")
     parser.add_argument("--overwrite", action="store_true", help="Update existing files instead of adding timestamp suffixes")
@@ -150,7 +152,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     if not args.repo:
-        print("error: --repo or MUFENG_GITHUB_IMAGE_REPO is required", file=sys.stderr)
+        print("error: --repo must not be empty", file=sys.stderr)
         return 2
     if "/" not in args.repo:
         print("error: repo must be in owner/name form", file=sys.stderr)

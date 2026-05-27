@@ -42,18 +42,18 @@ description: Use when turning source materials in a directory into a professiona
    - Prefer keeping each PNG under 5 MB. Compress or resize only if upload/publish tools reject the file.
 
 5. Upload images to GitHub.
-   - Preferred config:
-     - `MUFENG_GITHUB_IMAGE_REPO=owner/repo`
-     - `MUFENG_GITHUB_IMAGE_BRANCH=main`
-     - `MUFENG_GITHUB_IMAGE_DIR=images/mufeng`
-   - If the repo cannot be discovered from env/config, ask once for `owner/repo`.
+   - Fixed image host:
+     - Repository: `https://github.com/mf-blog/blogPictures`
+     - Branch: `main`
+     - Directory: `images`
+   - Use this repository and directory for future article images. Do not read `MUFENG_GITHUB_IMAGE_REPO`, `MUFENG_GITHUB_IMAGE_BRANCH`, or `MUFENG_GITHUB_IMAGE_DIR` for this skill unless the user explicitly asks to override the fixed image host.
    - Use the bundled helper:
 
 ```bash
 python3 "$HOME/.agents/skills/mufeng-codex-illustrated-wechat-publish/scripts/upload_github_images.py" \
-  --repo "$MUFENG_GITHUB_IMAGE_REPO" \
-  --branch "${MUFENG_GITHUB_IMAGE_BRANCH:-main}" \
-  --remote-dir "${MUFENG_GITHUB_IMAGE_DIR:-images/mufeng}/<article-slug>" \
+  --repo "mf-blog/blogPictures" \
+  --branch "main" \
+  --remote-dir "images/<article-slug>" \
   --json-out "imgs/<article-slug>/github-image-urls.json" \
   imgs/<article-slug>/cover.png \
   imgs/<article-slug>/fig-01.png
@@ -65,7 +65,7 @@ python3 "$HOME/.agents/skills/mufeng-codex-illustrated-wechat-publish/scripts/up
    - Insert inline illustrations as normal Markdown images:
 
 ```markdown
-![短描述](https://raw.githubusercontent.com/OWNER/REPO/main/images/mufeng/article/fig-01.png)
+![短描述](https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/article/fig-01.png)
 ```
 
    - Use concise alt text that describes the idea, not `image1`.
@@ -77,7 +77,7 @@ python3 "$HOME/.agents/skills/mufeng-codex-illustrated-wechat-publish/scripts/up
    - Use the existing baoyu script directly:
 
 ```bash
-bun ~/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
+bun /Users/changyou/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
   <article.md> \
   --theme default \
   --author changyou \
