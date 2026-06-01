@@ -26,7 +26,7 @@ Analyze any publicly traded company across **8 core research dimensions** and au
 | 5 | Peer Benchmarking                   |
 | 6 | Growth Catalysts                    |
 | 7 | Technical Analysis                  |
-| 8 | Investment Considerations & Summary |
+| 8 | Research Considerations & Summary   |
 
 ---
 
@@ -137,9 +137,9 @@ Price trends, momentum indicators, support and resistance levels.
 
 Recent news coverage, investor sentiment, and market perception.
 
-### Investment Considerations & Summary
+### Research Considerations & Summary
 
-Balanced summary of strengths, risks, valuation observations, and key factors investors may wish to consider.
+Balanced summary of strengths, risks, valuation observations, and key factors relevant to educational research.
 
 ---
 
@@ -148,7 +148,8 @@ Balanced summary of strengths, risks, valuation observations, and key factors in
 * Do not provide Buy, Hold, or Sell recommendations.
 * Do not provide target prices.
 * Do not predict future stock performance with certainty.
-* Do not instruct users to buy, sell, or hold any asset.
+* Do not instruct users to buy, sell, hold, wait on, avoid, enter, exit, add, reduce, take profits, or treat any specific asset as investable.
+* If a user asks whether to take an investment action in a specific stock, decline to answer the action question and redirect to educational research.
 * Clearly distinguish facts from assumptions.
 * All analytical conclusions must include uncertainty and alternative scenarios.
 * Use probabilistic language when discussing future outcomes.
@@ -209,7 +210,7 @@ Data availability may vary across markets and companies. When structured financi
 | 5 | 同行对标分析      |
 | 6 | 成长催化剂       |
 | 7 | 技术面分析       |
-| 8 | 投资关注要点与分析总结 |
+| 8 | 研究关注要点与分析总结 |
 
 ---
 
@@ -302,9 +303,9 @@ in Chinese
 
 汇总近期新闻动态、投资者情绪及市场关注重点。
 
-### 投资关注要点与分析总结
+### 研究关注要点与分析总结
 
-客观总结公司优势、风险因素、估值情况以及投资者值得关注的关键问题。
+客观总结公司优势、风险因素、估值情况以及教育研究中值得关注的关键问题。
 
 ---
 
@@ -313,7 +314,8 @@ in Chinese
 * 不提供买入、持有或卖出建议
 * 不提供目标价格预测
 * 不以确定性语言预测未来股价走势
-* 不指导用户买卖任何资产
+* 不指导用户买入、卖出、持有、等待、观望、回避、建仓、清仓、加仓、减仓、止盈，或将任何具体资产视为可投资标的
+* 如果用户询问是否应对具体股票采取投资动作，需拒绝回答该动作问题，并转向教育性研究
 * 明确区分事实与假设
 * 所有分析结论均需说明不确定性及不同情景
 * 对未来情况采用概率性表达

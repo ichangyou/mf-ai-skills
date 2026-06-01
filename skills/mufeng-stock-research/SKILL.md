@@ -3,14 +3,48 @@ name: mufeng-stock-research
 description: "Educational stock research skill for market analysis and financial study. Works standalone via web search, or enhanced with Financial Datasets MCP for real-time structured data. Runs 8 analyses (fundamentals, risk, DCF, peer comparison, catalysts, technical, sentiment, research summary) and exports to PDF + HTML (default) or Word. Supports English (default) and Chinese."
 when_to_use: "stock analysis, stock research, market research, 股票研究, 股票分析, 市场研究, fundamental analysis, DCF valuation, company research, analyze [company], research [company]"
 metadata:
-  version: "3.0.0"
+  version: "1.0.0"
 ---
 
-> **Disclaimer:** This skill is for educational research and informational purposes only. It does not constitute professional financial advice. Users should consult a licensed financial advisor before making any financial decisions. All analytical conclusions include uncertainty caveats. This skill will not use language expressing certainty such as "guaranteed", "definitely", or "sure profit", and will not directly instruct users to buy or sell specific assets.
+> **Disclaimer:** This skill is for educational research and informational purposes only. It does not constitute professional financial advice. Users should consult a licensed financial advisor before making any financial decisions. All analytical conclusions include uncertainty caveats. This skill will not use language expressing certainty such as "guaranteed", "definitely", or "sure profit", and will not provide investment-action judgments for specific assets.
 
 # Stock Research & Market Analysis
 
 Fetch live data from Financial Datasets MCP (where available), supplement with web search, run 8 structured analyses, and compile a professional research report for educational purposes.
+
+## Safety Boundary: Educational Research Only
+
+This skill may analyze facts, assumptions, valuation scenarios, risks, catalysts, technical levels, and sentiment for a publicly traded company. It must not answer whether the user should take an investment action in a specific stock.
+
+### Direct Action Questions
+
+If the user asks any direct action question about a specific asset, first state the boundary, then redirect to educational research. This includes questions such as:
+
+- "Should I buy/sell/hold [stock]?"
+- "Is [stock] a buy?"
+- "Would you buy [stock] now?"
+- "Should I wait, avoid, enter, add, reduce, or take profits?"
+- "Is [stock] investable?"
+
+Use this response pattern before continuing:
+
+```text
+I can't tell you whether to buy, sell, hold, wait on, avoid, enter, or treat [Company] ([Ticker]) as investable. I can provide educational research on its fundamentals, valuation scenarios, risks, catalysts, technical levels, and sentiment so you can discuss the decision with a licensed financial advisor.
+```
+
+### Prohibited Output
+
+Never write an action verdict for a specific stock, even with disclaimers or investor-type qualifiers. Prohibited examples include:
+
+- "Clear answer: yes/no."
+- "I would buy / would not buy [stock] now."
+- "For a new position: wait."
+- "Existing holders should hold/sell/add/reduce."
+- "Avoid this stock."
+- "This is investable / not investable."
+- "Enter below $X" or "take profits above $X."
+
+Do not replace Buy/Hold/Sell with synonymous action labels such as accumulate, trim, wait, avoid, enter, exit, add, reduce, take profits, or investable. Do not convert valuation gaps, technical levels, or sentiment into instructions about what the user should do.
 
 ## Financial Datasets MCP — Optional Enhancement
 
@@ -35,6 +69,8 @@ Before calling any MCP endpoint, probe availability with `get_company_facts(tick
 | All others (price, financials, metrics, news, earnings, insider trades) | 💳 Requires paid credits |
 
 ## Workflow
+
+Before Step 1, check whether the user's request contains a direct action question. If it does, apply the safety boundary above and then continue only with educational research content.
 
 ### Step 1: Parse Input
 
@@ -77,12 +113,12 @@ Load `references/prompts.md` for the full bilingual prompt set. Write each secti
 |---|-------|--------------------------|
 | 1 | **Fundamentals** | income statement (4yr trend), company facts, financial metrics snapshot |
 | 2 | **Downside Risk** | balance sheet (debt/cash), financial metrics (leverage), news (regulatory) |
-| 3 | **DCF Valuation** | cash flow statement (FCF), income statement (margins), balance sheet (shares, net cash) |
+| 3 | **DCF Scenario Analysis** | cash flow statement (FCF), income statement (margins), balance sheet (shares, net cash) |
 | 4 | **Peer Benchmarking** | financial metrics snapshot for company + each peer |
 | 5 | **Catalysts** | earnings (surprise history + next date), news, insider trades |
 | 6 | **Technical Analysis** | stock_prices (180-day daily OHLCV), stock_price (latest) |
 | 7 | **News Sentiment** | news (last 30 days), insider trades direction |
-| 8 | **Research Summary** | synthesize all above into educational thesis discussion |
+| 8 | **Research Summary** | synthesize all above into educational research discussion |
 
 ### Step 4: Compile the Report
 
@@ -97,7 +133,7 @@ Assemble all 8 sections into a single markdown document:
 ---
 
 ## Executive Summary
-[2-3 sentence overview of the company's key financial characteristics, notable strengths/risks, and research thesis — no buy/sell/hold call]
+[2-3 sentence overview of the company's key financial characteristics, notable strengths/risks, and research observations — no investment-action verdict]
 
 ## 1. Fundamental Analysis
 ...
@@ -105,7 +141,7 @@ Assemble all 8 sections into a single markdown document:
 ## 2. Downside Risk Assessment
 ...
 
-## 3. DCF Valuation
+## 3. DCF Scenario Analysis
 ...
 
 ## 4. Peer Benchmarking
@@ -121,10 +157,10 @@ Assemble all 8 sections into a single markdown document:
 ...
 
 ## 8. Research Summary
-**Bull Case:** [key upside factors, with uncertainty caveats]
-**Bear Case:** [key downside factors, with uncertainty caveats]
+**Supportive Factors:** [key factors that could support stronger outcomes, with uncertainty caveats]
+**Risk Factors:** [key downside risks and headwinds]
 **Key Uncertainties:** [variables that most affect the outcome]
-**Summary:** [balanced synthesis of all 7 analyses — no buy/sell/hold rating, no price target]
+**Summary:** [balanced synthesis of all 7 analyses — no investment-action verdict, no price target]
 
 ---
 *Data sourced from Financial Datasets MCP and public web sources as of [date]. This report is AI-generated for educational purposes only and does not constitute professional financial advice. Consult a licensed financial advisor before making any investment decisions.*
@@ -159,9 +195,18 @@ If PDF generation fails (no Chrome or PDF engine), the script prints a warning a
 ## Quality Standards
 
 - Every number in the report must come from MCP data or a cited web source — no fabricated figures.
-- DCF model must explicitly state: FCF base (from MCP), revenue growth rate, operating margin, WACC, terminal growth rate, shares outstanding (from balance sheet).
+- DCF scenario analysis must explicitly state: FCF base (from MCP), revenue growth rate, operating margin, WACC, terminal growth rate, shares outstanding (from balance sheet), and that outputs are illustrative scenarios rather than price targets.
 - Technical analysis must name specific price levels derived from the fetched OHLCV data.
 - Peer table must show real metric values fetched from MCP, not approximations.
-- **Do not make Buy / Hold / Sell ratings, issue price targets, or provide direct investment instructions.** This skill is for educational research only.
+- **Do not make Buy / Hold / Sell ratings, issue price targets, or provide direct investment instructions.** This also forbids equivalent action judgments such as wait, avoid, enter, exit, add, reduce, take profits, accumulate, trim, or investable. This skill is for educational research only.
 - **Do not use language expressing certainty** such as "guaranteed", "definitely", or "sure profit." All analytical conclusions must include uncertainty caveats (e.g., "suggests", "indicates", "based on current data").
-- The Research Summary must present a balanced bull/bear discussion — never a single definitive call.
+- The Research Summary must present balanced supportive factors, risk factors, and key uncertainties — never a single definitive call or action verdict.
+
+## Final Compliance Check
+
+Before sending the final answer or generated report, verify:
+
+- It does not answer a direct action question with yes/no.
+- Outside the boundary sentence that declines to provide action guidance, it does not contain "I would buy", "I would not buy", "for a new position", "wait", "avoid", "enter", "add", "reduce", "take profits", "investable", or equivalent action language for the specific stock.
+- Any DCF output is labeled as an illustrative valuation scenario, not a target price.
+- Technical levels are labeled as market observations, not entry, exit, stop-loss, or take-profit instructions.
