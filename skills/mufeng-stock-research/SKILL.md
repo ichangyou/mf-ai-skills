@@ -130,18 +130,18 @@ Assemble all 8 sections into a single markdown document:
 *Data sourced from Financial Datasets MCP and public web sources as of [date]. This report is AI-generated for educational purposes only and does not constitute professional financial advice. Consult a licensed financial advisor before making any investment decisions.*
 ```
 
-Save the compiled markdown to `~/Desktop/[Ticker]-research-report.md`.
+Save the compiled markdown to the user's Desktop as `[Ticker]-research-report.md`. Resolve the Desktop path at runtime based on the operating system (macOS/Linux: the standard user Desktop folder; Windows: the equivalent Desktop path).
 
 ### Step 5: Export the Report
 
-Run `scripts/export.py` to generate the final files. **Default behavior exports both HTML and PDF** alongside the markdown.
+Run `scripts/export.py` to generate the final files. **Default behavior exports both HTML and PDF** alongside the markdown. Resolve the skill script path at runtime from the skill's own directory.
 
 ```bash
 # Default: HTML + PDF (always run this unless user asked for Word)
-python3 ~/.claude/skills/mufeng-stock-research/scripts/export.py ~/Desktop/[Ticker]-research-report.md
+python3 [skill-dir]/scripts/export.py [Desktop]/[Ticker]-research-report.md
 
 # Word only (when user explicitly asked for Word/DOCX)
-python3 ~/.claude/skills/mufeng-stock-research/scripts/export.py ~/Desktop/[Ticker]-research-report.md --format docx
+python3 [skill-dir]/scripts/export.py [Desktop]/[Ticker]-research-report.md --format docx
 ```
 
 Expected output files (default):
