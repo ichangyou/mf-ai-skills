@@ -36,6 +36,20 @@ If `CODEX_HOME` is unset, use `$HOME/.codex`.
    - English: `storybook_en.pdf`
 7. Verify page count, image count, and sample rendered pages.
 
+## Chinese PDF Font Rule
+
+For Chinese PDFs, do not use `Songti.ttc` without an explicit font index. On macOS,
+index `0` resolves to `Songti SC Black`, which makes captions look too heavy.
+
+Use these explicit Songti weights for Chinese PDF rendering:
+
+- Body captions and footer: `/System/Library/Fonts/Supplemental/Songti.ttc`, index `3` (`Songti SC Light`)
+- Page titles: `/System/Library/Fonts/Supplemental/Songti.ttc`, index `6` (`Songti SC Regular`)
+
+This avoids prior glyph-rendering mistakes where characters such as `着`, `将`,
+`起`, `径`, and `造起` looked blurred or were misread, without making the text
+visually too bold.
+
 ## Recommended Commands
 
 Create scene and prompt files only:

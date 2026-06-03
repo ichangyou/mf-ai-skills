@@ -1,0 +1,13 @@
+{
+  "title": "Stock Research & Market Analysis",
+  "description": "Educational stock research skill for market analysis and financial study. It works via web search, optionally uses Financial Datasets MCP for structured data, runs eight research analyses, and exports reports to PDF, HTML, or Word.",
+  "skills": [
+    {
+      "path": ".agents/skills/mufeng-stock-research",
+      "name": "mufeng-stock-research",
+      "purpose": "Generate educational equity research reports with fundamentals, risk, DCF scenarios, peer comparison, catalysts, technical analysis, sentiment, and balanced research summaries without giving investment-action advice."
+    }
+  ],
+  "plugins": [],
+  "crons": []
+}

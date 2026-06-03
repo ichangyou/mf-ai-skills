@@ -249,6 +249,23 @@ def load_font(size: int, bold: bool = False):
     return ImageFont.load_default()
 
 
+def load_pdf_font(size: int, language: str, bold: bool = False):
+    from PIL import ImageFont
+
+    if language == "zh":
+        songti = Path("/System/Library/Fonts/Supplemental/Songti.ttc")
+        if songti.exists():
+            # Songti.ttc index 0 is Songti SC Black and is too heavy for captions.
+            # Use explicit SC weights: Light for body/footer, Regular for titles.
+            return ImageFont.truetype(str(songti), size=size, index=6 if bold else 3)
+
+        hiragino = Path("/System/Library/Fonts/Hiragino Sans GB.ttc")
+        if hiragino.exists():
+            return ImageFont.truetype(str(hiragino), size=size, index=0)
+
+    return load_font(size, bold=bold)
+
+
 def text_width(draw, text: str, font) -> int:
     left, _top, right, _bottom = draw.textbbox((0, 0), text, font=font)
     return right - left
@@ -327,9 +344,9 @@ def make_pdf(scenes: Sequence[Scene], output_pdf: Path, language: str, footer: s
     margin = 68
     image_box = (page_w - margin * 2, 840)
     caption_top = margin + image_box[1] + 42
-    title_font = load_font(32 if language == "en" else 34, bold=True)
-    caption_font = load_font(32 if language == "en" else 38)
-    footer_font = load_font(22)
+    title_font = load_pdf_font(32 if language == "en" else 34, language, bold=True)
+    caption_font = load_pdf_font(32 if language == "en" else 38, language)
+    footer_font = load_pdf_font(22, language)
 
     rendered = []
     for index, scene in enumerate(scenes, start=1):

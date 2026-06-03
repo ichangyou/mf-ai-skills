@@ -76,6 +76,12 @@ Chinese:
 
 - PDF: `storybook.pdf`
 - Footer: short title such as `西游记 · 第一回`
+- Font rule: render Chinese page titles with `Songti.ttc` index `6`
+  (`Songti SC Regular`), and Chinese captions/footer with `Songti.ttc` index
+  `3` (`Songti SC Light`). Never rely on the default `Songti.ttc` index because
+  it maps to `Songti SC Black` and makes the PDF text too heavy.
+- Regression check: inspect common problem characters after rendering,
+  especially `着`, `将`, `起`, `径`, and phrases such as `造起`.
 
 English:
 
@@ -106,3 +112,4 @@ Inspect sampled pages for:
 - Page number correct
 - Footer title short and natural
 - Captions not clipped
+- Chinese glyphs render correctly without excessive boldness
