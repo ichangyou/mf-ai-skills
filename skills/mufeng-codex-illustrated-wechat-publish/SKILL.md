@@ -1,18 +1,43 @@
 ---
 name: mufeng-codex-illustrated-wechat-publish
-description: Use when turning source materials in a directory into a professional WeChat Official Account article with mufeng-blog-writing, then adding Codex-generated PNG cover and inline illustrations, uploading images to a GitHub image host, inserting raw GitHub image URLs into the article, and publishing it to WeChat.
+description: Use when turning source materials in a directory into a professional WeChat Official Account article with mufeng-blog-writing, SEO/GEO-friendly Markdown slug metadata, Codex-generated PNG cover and inline illustrations, GitHub-hosted raw image URLs, and WeChat publishing.
 ---
 
 # Mufeng Codex Illustrated WeChat Publish
 
 ## Core Rules
 
-- Start from the materials in the requested directory, not from a blank topic. Generate the article first with the `mufeng-blog-writing` skill's article-writing conventions.
+- Start from the materials in the requested directory, not from a blank topic. Generate the article first with the `mufeng-blog-writing` skill's article-writing conventions, with this skill's frontmatter requirements taking precedence.
+- Every generated Markdown article must include an SEO/GEO-friendly `slug` in YAML frontmatter and use that same value as `<article-slug>` for image folders and GitHub paths.
 - Use Codex built-in image generation for all new cover and illustration images. Do not call OpenAI Images API, `baoyu-image-gen`, Google, DashScope, or other image CLIs unless the user explicitly asks to switch.
 - Save generated images as PNG. If a generated asset is not PNG, convert it to PNG before upload.
 - Keep generated images free of readable UI text, Chinese text, labels, captions, watermarks, and signatures unless the user explicitly requests text in the image. Put titles/captions in Markdown instead.
 - Upload the cover and all inline illustrations to GitHub image hosting, then insert `https://raw.githubusercontent.com/...` URLs into the Markdown article.
 - Publish from the final Markdown file. Do not pre-convert Markdown to HTML before calling the WeChat publishing script.
+
+## SEO/GEO Slug Rules
+
+- Put the slug in YAML frontmatter exactly as `slug: <article-slug>`.
+- Use lowercase ASCII kebab-case only: `a-z`, `0-9`, and single hyphens. Do not use Chinese characters, spaces, underscores, punctuation, emoji, or URL encoding.
+- Make it semantic and search-aligned: include the main entity/tool/technology plus the concrete problem, solution, or outcome. Prefer `codex-wechat-article-image-publish` over generic values like `article`, `wechat-post`, or `notes`.
+- Keep it concise: 3-8 meaningful words, usually under 70 characters.
+- Translate Chinese topic words into common English search terms, but preserve established product, framework, API, and library names in normalized lowercase form, for example `swiftui`, `spring-boot`, `wechat`, `codex`.
+- Avoid filler and clickbait terms such as `best`, `ultimate`, `guide`, `new`, `latest`, `awesome`, unless they are genuinely part of the user's target keyword.
+- Do not include dates unless the date is essential to the topic or needed to avoid a real collision. For filename collisions, prefer the file suffix (`-v2`) without changing the frontmatter slug.
+- Reuse this exact slug in local image paths (`imgs/<article-slug>/...`), GitHub remote paths (`images/<article-slug>/...`), and the completion report.
+- If revising an existing article that already has a good slug, preserve it. If it is missing or poor, replace it and mention the change.
+
+Recommended frontmatter shape:
+
+```yaml
+---
+title: "..."
+slug: codex-wechat-article-image-publish
+author: changyou
+date: YYYY-MM-DD
+coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/codex-wechat-article-image-publish/cover.png
+---
+```
 
 ## Workflow
 
@@ -21,8 +46,9 @@ description: Use when turning source materials in a directory into a professiona
    - Treat Markdown, text notes, transcripts, outlines, code snippets, screenshots/OCR notes, and other user-provided files in that directory as source material.
    - Ignore build/cache/vendor folders, generated image folders, previous WeChat output folders, and existing `github-image-urls.json` files.
    - Read the `mufeng-blog-writing` skill and follow its workflow, tone, structure, metadata, and footer rules.
-   - Generate a professional Chinese WeChat Official Account article as Markdown. It should be publish-ready, with frontmatter `title`, `author: changyou`, `date: YYYY-MM-DD`, a clear `#` title, summary, tags, and practical structure.
-   - Save the generated Markdown article in the requested directory unless the user specifies another output path. If a target filename already exists, append `-v2`, `-v3`, etc. rather than overwriting.
+   - Before drafting, derive one canonical `article-slug` from the source material's core topic, target query, and specific outcome.
+   - Generate a professional Chinese WeChat Official Account article as Markdown. It should be publish-ready, with frontmatter `title`, `slug`, `author: changyou`, `date: YYYY-MM-DD`, a clear `#` title, summary, tags, and practical structure.
+   - Save the generated Markdown article in the requested directory unless the user specifies another output path. If no filename is specified, prefer `<article-slug>.md` over the Chinese title. If a target filename already exists, append `-v2`, `-v3`, etc. rather than overwriting.
    - The generated article becomes the target article for all later steps.
 
 2. Read the generated article and make an image plan.
@@ -60,12 +86,12 @@ python3 "$HOME/.agents/skills/mufeng-codex-illustrated-wechat-publish/scripts/up
 ```
 
 6. Insert image URLs into the generated Markdown article.
-   - Add or update frontmatter with `coverImage: <cover-url>`.
+   - Add or update frontmatter with `coverImage: <cover-url>` while preserving the existing `slug`.
    - Insert the cover near the top of the article only if the user asked for the cover to appear in the article body; otherwise use it as publishing metadata.
    - Insert inline illustrations as normal Markdown images:
 
 ```markdown
-![短描述](https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/article/fig-01.png)
+![短描述](https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/<article-slug>/fig-01.png)
 ```
 
    - Use concise alt text that describes the idea, not `image1`.
@@ -99,6 +125,7 @@ bun /Users/changyou/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-
 Report:
 
 - Source material directory used.
+- Article slug.
 - Generated article path.
 - Article path changed.
 - Cover URL and inline image URLs.
