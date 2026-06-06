@@ -1,4 +1,4 @@
 interface:
   display_name: "mufeng-codex-illustrated-wechat-publish"
-  short_description: "Materials to WeChat with SEO/GEO slug and images"
-  default_prompt: "Use $mufeng-codex-illustrated-wechat-publish to turn this directory's materials into a professional WeChat article with an SEO/GEO-friendly slug, add Codex-generated PNG cover and illustrations, upload them to GitHub, insert links, and publish."
+  short_description: "Materials to WeChat with SEO/GEO metadata and images"
+  default_prompt: "Use $mufeng-codex-illustrated-wechat-publish to turn this directory's materials into a professional WeChat article with SEO/GEO-friendly frontmatter metadata, add Codex-generated PNG cover and illustrations, upload them to GitHub, insert links, and publish."

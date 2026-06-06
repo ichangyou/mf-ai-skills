@@ -1,6 +1,6 @@
 ---
 name: mufeng-codex-illustrated-wechat-publish
-description: Use when turning source materials in a directory into a professional WeChat Official Account article with mufeng-blog-writing, SEO/GEO-friendly Markdown slug metadata, Codex-generated PNG cover and inline illustrations, GitHub-hosted raw image URLs, and WeChat publishing.
+description: Use when turning source materials in a directory into a professional WeChat Official Account article with mufeng-blog-writing, SEO/GEO-friendly Markdown metadata, Codex-generated PNG cover and inline illustrations, GitHub-hosted raw image URLs, and WeChat publishing.
 ---
 
 # Mufeng Codex Illustrated WeChat Publish
@@ -8,15 +8,42 @@ description: Use when turning source materials in a directory into a professiona
 ## Core Rules
 
 - Start from the materials in the requested directory, not from a blank topic. Generate the article first with the `mufeng-blog-writing` skill's article-writing conventions, with this skill's frontmatter requirements taking precedence.
-- Every generated Markdown article must include an SEO/GEO-friendly `slug` in YAML frontmatter and use that same value as `<article-slug>` for image folders and GitHub paths.
+- Every generated Markdown article must include SEO/GEO-friendly YAML frontmatter with `title`, `slug`, `author`, `date`, `category`, `summary`, `tags`, and later `coverImage`.
 - Use Codex built-in image generation for all new cover and illustration images. Do not call OpenAI Images API, `baoyu-image-gen`, Google, DashScope, or other image CLIs unless the user explicitly asks to switch.
 - Save generated images as PNG. If a generated asset is not PNG, convert it to PNG before upload.
 - Keep generated images free of readable UI text, Chinese text, labels, captions, watermarks, and signatures unless the user explicitly requests text in the image. Put titles/captions in Markdown instead.
 - Upload the cover and all inline illustrations to GitHub image hosting, then insert `https://raw.githubusercontent.com/...` URLs into the Markdown article.
 - Publish from the final Markdown file. Do not pre-convert Markdown to HTML before calling the WeChat publishing script.
 
-## SEO/GEO Slug Rules
+## WeChat Ending Hook Rules
 
+- Every generated or revised WeChat article must end with a short topic-specific engagement hook after the substantive conclusion.
+- The hook should invite readers to comment with their own experience, mention that the discussion may help other domestic developers/readers, and ask readers to tap `在看` or share if the article was useful.
+- Adapt the first paragraph to the article topic. Do not reuse the payment/card-declined example unless the article is actually about payments.
+- End with this fixed brand follow block:
+
+```markdown
+写 AI，写成长，偶尔写投资。
+关注沐风，不定期更新，全是干货。
+```
+
+- Keep the hook natural and restrained: no emojis, no excessive exclamation marks, no generic sales slogans, and no long unrelated self-promotion.
+- If the `mufeng-blog-writing` skill has footer rules, this hook is still mandatory. Place it after the article's normal conclusion and before any publishing-only metadata.
+- When revising an existing article, add or update the hook once. Do not duplicate existing calls to action.
+
+## SEO/GEO Frontmatter Rules
+
+- Use `category`, not the misspelled `categery`.
+- Required frontmatter fields before publishing:
+  - `title`: include the core keyword or entity naturally, usually under 60 Chinese characters.
+  - `slug`: SEO/GEO-friendly ASCII slug. Use the same value as `<article-slug>` for image folders and GitHub paths.
+  - `author`: always `changyou`.
+  - `date`: `YYYY-MM-DD`.
+  - `category`: one concise human-readable category, for example `AI 编程`, `开发工具`, `iOS 开发`, `后端开发`, `前端开发`, `成长复盘`, or `投资笔记`.
+  - `summary`: 150-200 Chinese characters covering the problem, solution, and outcome. Include core keywords naturally. No Markdown, links, line breaks, or promotional filler.
+  - `tags`: 4-8 tags as a YAML list. Include the main entity/tool, technology stack, problem domain, and reader intent. Do not use `#` prefixes.
+  - `coverImage`: add after GitHub upload using the uploaded cover raw URL.
+- Frontmatter `summary` and `tags` are mandatory even if the article body also contains visible `摘要` and `标签` sections.
 - Put the slug in YAML frontmatter exactly as `slug: <article-slug>`.
 - Use lowercase ASCII kebab-case only: `a-z`, `0-9`, and single hyphens. Do not use Chinese characters, spaces, underscores, punctuation, emoji, or URL encoding.
 - Make it semantic and search-aligned: include the main entity/tool/technology plus the concrete problem, solution, or outcome. Prefer `codex-wechat-article-image-publish` over generic values like `article`, `wechat-post`, or `notes`.
@@ -31,11 +58,19 @@ Recommended frontmatter shape:
 
 ```yaml
 ---
-title: "..."
-slug: codex-wechat-article-image-publish
+title: "Superpowers Skill - 让 Claude Code 和 Codex 按工程流程做开发"
+slug: superpowers-skill-claude-codex-workflow
 author: changyou
 date: YYYY-MM-DD
-coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/codex-wechat-article-image-publish/cover.png
+category: AI 编程
+summary: "这篇文章从 Superpowers Skill 的设计出发，拆解它如何把 Claude Code 和 Codex 从临时问答变成可验证的工程流程，包括计划、测试、实现、复盘这些关键环节，帮助开发者减少返工并提升 AI 编程交付质量，也让团队更容易明确目标、约束变更范围、补齐验证闭环。"
+tags:
+  - Superpowers
+  - Claude Code
+  - Codex
+  - AI 编程
+  - 工程流程
+coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/superpowers-skill-claude-codex-workflow/cover.png
 ---
 ```
 
@@ -47,7 +82,8 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/c
    - Ignore build/cache/vendor folders, generated image folders, previous WeChat output folders, and existing `github-image-urls.json` files.
    - Read the `mufeng-blog-writing` skill and follow its workflow, tone, structure, metadata, and footer rules.
    - Before drafting, derive one canonical `article-slug` from the source material's core topic, target query, and specific outcome.
-   - Generate a professional Chinese WeChat Official Account article as Markdown. It should be publish-ready, with frontmatter `title`, `slug`, `author: changyou`, `date: YYYY-MM-DD`, a clear `#` title, summary, tags, and practical structure.
+   - Generate a professional Chinese WeChat Official Account article as Markdown. It should be publish-ready, with frontmatter `title`, `slug`, `author: changyou`, `date: YYYY-MM-DD`, `category`, `summary`, and `tags`, plus a clear `#` title and practical structure.
+   - Append the required WeChat ending hook before saving the article.
    - Save the generated Markdown article in the requested directory unless the user specifies another output path. If no filename is specified, prefer `<article-slug>.md` over the Chinese title. If a target filename already exists, append `-v2`, `-v3`, etc. rather than overwriting.
    - The generated article becomes the target article for all later steps.
 
@@ -86,7 +122,8 @@ python3 "$HOME/.agents/skills/mufeng-codex-illustrated-wechat-publish/scripts/up
 ```
 
 6. Insert image URLs into the generated Markdown article.
-   - Add or update frontmatter with `coverImage: <cover-url>` while preserving the existing `slug`.
+   - Add or update frontmatter with `coverImage: <cover-url>` while preserving the existing `slug`, `category`, `summary`, and `tags`.
+   - If `category`, `summary`, or `tags` are missing or only present in the body, add them to YAML frontmatter before publishing.
    - Insert the cover near the top of the article only if the user asked for the cover to appear in the article body; otherwise use it as publishing metadata.
    - Insert inline illustrations as normal Markdown images:
 
@@ -126,8 +163,10 @@ Report:
 
 - Source material directory used.
 - Article slug.
+- Frontmatter category, summary, and tags.
 - Generated article path.
 - Article path changed.
+- Whether the required WeChat ending hook was added or preserved.
 - Cover URL and inline image URLs.
 - WeChat publishing method and result, including draft `media_id` if the API returns one.
 - Any skipped step or manual action still required.
