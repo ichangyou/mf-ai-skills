@@ -1,165 +1,145 @@
 # mufeng-wechat-publish-full
 
-> 微信公众号全流程发布工作流 / End-to-end WeChat Official Account publishing workflow
+面向微信公众号的完整发布工作流 skill。它覆盖从文章策略、Markdown 元数据、封面和配图、GitHub 图床上传，到微信 API 发布和 HTML 兜底发布的全过程。
 
+`SKILL.md` 是给 agent 执行时读取的详细规则；本 README 是给人快速理解和维护用的入口说明。
+
+## 适用场景
+
+- 发布 AI 技术博客到微信公众号。
+- 给待发布 Markdown 补齐 SEO/GEO 友好的 frontmatter。
+- 生成或整理封面图、正文配图、截图、图解。
+- 将图片上传到固定 GitHub 图床。
+- 使用 Markdown 直发微信，或在必要时走 HTML fallback。
+- 处理上一次微信发布失败后的排查和重试。
+
+## 核心原则
+
+- 优先从最终 Markdown 文件直接发布，不要默认预转 HTML。
+- 每篇文章发布前必须有完整 frontmatter：`title`、`slug`、`author`、`date`、`category`、`summary`、`tags`、`coverImage`。
+- 统一使用同一个 `article-slug`，贯穿本地图片目录、GitHub 远程目录、frontmatter 和完成报告。
+- 图片固定上传到 `mf-blog/blogPictures` 的 `main` 分支。
+- 生成式图片主要用于无文字封面背景；正文优先使用真实截图、确定性图表、代码截图。
+- 发布前先确认当前出口 IP 已加入微信公众号后台 IP 白名单。
+
+## 目录结构
+
+```text
+mufeng-wechat-publish-full/
+├── README.md
+├── SKILL.md
+└── scripts/
+    └── upload_github_images.py
+```
+
+## 前置条件
+
+- `bun`：用于调用微信发布脚本。
+- `python3`：用于运行图片上传 helper。
+- `gh`：GitHub CLI，且已登录有权限写入 `mf-blog/blogPictures`。
+- 微信公众号 API 凭据和本机默认配置应已在本地发布脚本环境中可用。
+- 当前出口 IP 已配置到微信公众号后台：
+
+```bash
+curl -s https://api.ipify.org
+```
+
+## 推荐发布流程
+
+1. 准备最终 Markdown。
+2. 补齐或校验 YAML frontmatter。
+3. 确定统一的 `article-slug`。
+4. 准备封面和正文图片。
+5. 上传图片到 GitHub 图床。
+6. 将 Markdown 中的本地图片路径替换为 GitHub raw HTTPS URL。
+7. 检查结尾互动 hook 和固定关注文案。
+8. 用 Markdown 直发微信。
+9. 到微信公众号后台确认草稿和发布状态。
+
+## Frontmatter 模板
+
+```yaml
 ---
-
-## 中文说明
-
-### 功能描述
-
-覆盖微信公众号发布全流程的完整工作流，从内容策略优化到最终发布，共 6 个阶段。任何阶段失败后均可重新触发此 skill 进行定向修复。
-
-包含功能：
-- 微信推荐算法内容策略优化（Stage 0）
-- IP 白名单检查（Stage 1）
-- DashScope 图片生成（Stage 2）
-- GitHub 图床上传（Stage 3）
-- HTML 净化（Stage 4）
-- 微信 API 发布（Stage 5）
-
-### 安装与激活
-
-本 skill 通过 Claude Code 的 Skill 系统自动发现，无需单独安装。在 Claude Code 对话中输入以下命令激活：
-
-```
-/mufeng-wechat-publish-full
-```
-
-### 使用方式
-
-**完整流程发布**：
-
-```
-/mufeng-wechat-publish-full
-[粘贴 Markdown 文章内容]
-```
-
-**修复之前失败的步骤**：
-
-```
-/mufeng-wechat-publish-full
-上次 Stage 3 GitHub 上传失败了，文章如下：[内容]
-```
-
-### 六阶段工作流
-
-| 阶段 | 内容 | 关键规则 |
-|------|------|---------|
-| Stage 0 | 内容策略（推荐曝光优化） | 标题 18-24 字，首词为 AI 热词；前 150 字直给核心价值；结尾引导「在看」 |
-| Stage 1 | IP 白名单检查 | 任何 API 调用前必须先检查当前出口 IP 是否在白名单中 |
-| Stage 2 | 图片生成（DashScope） | 必须用 DashScope；中文文字不能嵌入图片（会乱码）|
-| Stage 3 | GitHub 图片上传 | 文件名必须唯一；使用 HTTPS raw URL；图片 < 5MB |
-| Stage 4 | HTML 净化 | 去除 SVG、`<a>` 标签、`<script>`、`<style>`、`<iframe>` |
-| Stage 5 | 发布 | `--title` 必填；使用 `bun`，不用 `npx` |
-
-### 发布前检查清单
-
-**内容策略**
-
-- 标题 18-24 字，首词为 AI 热词，无标题党措辞
-- 前 150 字直接给出核心价值，不铺垫背景
-- 每 400-600 字有一张图（降低跳出率）
-- 结尾有引导「在看」或留言的句子
-- 已开启原创标识
-- 已添加 2-3 个话题标签（#人工智能 等）
-- 发布时间在工作日 20:00-22:00 或 12:00-13:00
-
-**技术**
-
-- 当前出口 IP 已在微信公众平台白名单中
-- 图片使用 DashScope 生成（不用 Google API）
-- GitHub raw HTTPS URL 已通过 `curl -I` 验证返回 200
-- HTML 已去除 SVG、所有 `<a>` 标签、`<script>`、`<style>`、`<iframe>`
-- 发布命令使用 `bun`（不用 `npx`）
-- `--title` 参数已提供且非空
-
-### 常见故障处理
-
-| 错误 | 原因 | 解决 |
-|------|------|------|
-| 401/403（无明显 auth 错误）| IP 未白名单 | 检查出口 IP，添加到白名单 |
-| Stage 2 图片中文乱码 | DashScope 不支持中文文字生成 | 改用 HTML 文字叠加层 |
-| Stage 3 返回 422 | 文件名已存在 | 使用时间戳后缀生成唯一文件名 |
-| 草稿已创建但未发布 | `freePublish.submit` 未调用 | 检查是否完成了两步：addDraft → submit |
-
+title: "文章标题"
+slug: article-topic-keyword
+author: changyou
+date: YYYY-MM-DD
+category: AI 编程
+summary: "150-200 字中文摘要，覆盖问题、方案和结果，自然包含核心关键词。"
+tags:
+  - Claude Code
+  - Codex
+  - AI 编程
+coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/article-topic-keyword/cover.png
 ---
-
-## English Guide
-
-### Description
-
-A complete end-to-end WeChat Official Account publishing workflow covering six stages, from content strategy optimization to final publication. Can be re-triggered at any point to fix a failed step.
-
-Capabilities:
-- WeChat recommendation algorithm content strategy optimization (Stage 0)
-- IP whitelist check (Stage 1)
-- DashScope image generation (Stage 2)
-- GitHub image hosting upload (Stage 3)
-- HTML sanitization (Stage 4)
-- WeChat API publish (Stage 5)
-
-### Installation & Activation
-
-This skill is auto-discovered by Claude Code's Skill system. No separate installation is required. Activate in Claude Code chat:
-
-```
-/mufeng-wechat-publish-full
 ```
 
-### Usage
+注意：字段名使用 `category`，不要写成 `categery`。
 
-**Full workflow publish**:
+## 上传图片
 
+推荐用内置 helper 上传 PNG 图片：
+
+```bash
+python3 "$HOME/.agents/skills/mufeng-wechat-publish-full/scripts/upload_github_images.py" \
+  --repo "mf-blog/blogPictures" \
+  --branch "main" \
+  --remote-dir "images/<article-slug>" \
+  --json-out "imgs/<article-slug>/github-image-urls.json" \
+  imgs/<article-slug>/cover.png \
+  imgs/<article-slug>/fig-01.png
 ```
-/mufeng-wechat-publish-full
-[Paste Markdown article content]
+
+脚本会：
+
+- 校验 PNG 文件。
+- 发现远程同名文件时自动追加时间戳，避免 GitHub API 422。
+- 输出 `raw.githubusercontent.com` 图片 URL。
+- 可选写入 JSON，方便回填 Markdown。
+
+如需覆盖远程同名图片，显式加 `--overwrite`。
+
+## Markdown 直发微信
+
+优先使用 Markdown 发布路径：
+
+```bash
+bun /Users/changyou/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
+  <article.md> \
+  --theme default \
+  --author changyou \
+  --cover <cover-url>
 ```
 
-**Fix a previously failed step**:
+发布前确认：
 
-```
-/mufeng-wechat-publish-full
-Stage 3 GitHub upload failed last time. Article content below: [content]
-```
+- `cover-url` 是公开可访问的 HTTPS 图片。
+- Markdown 中所有图片都已替换为 GitHub raw URL。
+- 标题可以从 frontmatter 或第一个 H1 稳定提取。
+- 结尾互动 hook 只出现一次。
 
-### Six-Stage Workflow
+## HTML fallback
 
-| Stage | Content | Key Rule |
-|-------|---------|----------|
-| Stage 0 | Content strategy (recommendation optimization) | Title 18-24 chars, AI hot word first; first 150 chars deliver core value; end with "Wow" prompt |
-| Stage 1 | IP whitelist check | Verify current outbound IP is whitelisted before any API call |
-| Stage 2 | Image generation (DashScope) | DashScope only; no Chinese text embedded in images (renders garbled) |
-| Stage 3 | GitHub image upload | Unique filename required; HTTPS raw URL; image < 5MB |
-| Stage 4 | HTML sanitization | Strip SVG, `<a>` tags, `<script>`, `<style>`, `<iframe>` |
-| Stage 5 | Publish | `--title` required; use `bun`, not `npx` |
+只有在 Markdown API 路径不可用，或用户明确要求 HTML 发布时才走 HTML fallback。
 
-### Pre-Publish Checklist
+HTML 发布前必须清理不兼容内容：
 
-**Content strategy**
+- 移除 `<svg>`。
+- 移除 `<script>` 和 `<style>`。
+- 移除 `<iframe>`。
+- 去掉 `<a>` 标签但保留链接文本。
+- 避免 `position:fixed` 或 `position:absolute` 等微信可能剥离的样式。
 
-- Title 18-24 chars, AI hot word first, no clickbait phrasing
-- First 150 chars deliver core value without background buildup
-- One image per 400-600 chars (reduces drop-off rate)
-- Ending contains a prompt to "Wow" or leave a comment
-- Original mark (原创) enabled
-- 2-3 topic tags added (#人工智能, etc.)
-- Publish time: weekday 20:00-22:00 or 12:00-13:00
+HTML fallback 发布时必须显式传 `--title`。
 
-**Technical**
+## 常见故障
 
-- Current outbound IP is whitelisted in WeChat MP backend
-- Images generated with DashScope (not Google API)
-- GitHub raw HTTPS URLs verified with `curl -I` returning 200
-- HTML stripped of SVG, all `<a>` tags, `<script>`, `<style>`, `<iframe>`
-- Publish command uses `bun` (not `npx`)
-- `--title` parameter is present and non-empty
+- `401` / `403`：优先检查 IP 白名单，不要盲目重试 API。
+- GitHub API `422`：远程文件已存在；让 helper 自动追加时间戳，或使用 `--overwrite`。
+- 微信草稿图片缺失：先用 `curl -I <raw-url>` 确认图片返回 `200`。
+- 封面出现乱码中文或假 UI：不要让 imagegen 生成文字；用 HTML/CSS 或后期工具叠字。
+- HTML 发布后样式丢失：检查是否包含 SVG、链接、脚本、iframe 或微信不支持的定位样式。
 
-### Common Error Fixes
+## 维护说明
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| 401/403 (no obvious auth error) | IP not whitelisted | Check outbound IP, add to whitelist |
-| Stage 2 Chinese text garbled in image | DashScope can't render Chinese in generated images | Use HTML text overlay instead |
-| Stage 3 returns 422 | Filename already exists | Use timestamp suffix to generate a unique filename |
-| Draft created but not published | `freePublish.submit` not called | Ensure both steps run: addDraft → submit |
+更新发布规则时，优先修改 `SKILL.md`。如果变更会影响人工使用方式、命令参数或前置条件，也同步更新本 README。

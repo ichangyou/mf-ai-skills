@@ -1,13 +1,26 @@
 ---
 name: mufeng-wechat-publish-full
-description: Use when publishing articles to WeChat Official Account (微信公众号), including tasks that involve professional article visuals, background-only cover generation, deterministic screenshots or diagrams before imagegen, uploading assets to GitHub, converting markdown to HTML, or calling the WeChat API. Also use when any step of a previous WeChat publish attempt failed. Includes AI tech blog content strategy for maximizing WeChat platform recommendation (推荐曝光).
+description: Use when publishing articles to WeChat Official Account (微信公众号), including tasks that involve SEO/GEO-friendly Markdown metadata, professional article visuals, background-only cover generation, deterministic screenshots or diagrams before imagegen, uploading assets to the fixed GitHub image host, direct Markdown publishing, HTML fallback publishing, or calling the WeChat API. Also use when any step of a previous WeChat publish attempt failed. Includes AI tech blog content strategy for maximizing WeChat platform recommendation (推荐曝光).
 ---
 
 # Mufeng WeChat Full Publishing Workflow
 
 ## Overview
 
-End-to-end skill for publishing AI tech blog articles to a WeChat Official Account. Covers every stage: content strategy for platform recommendations, IP verification, image generation (Google with DashScope fallback), GitHub asset upload, HTML sanitization, and final publish. Follow stages in order — skipping any stage causes silent failures downstream.
+End-to-end skill for publishing AI tech blog articles to a WeChat Official Account. Covers every stage: content strategy for platform recommendations, SEO/GEO-friendly Markdown metadata, IP verification, professional visuals, fixed GitHub image hosting, direct Markdown publishing, HTML fallback sanitization, and final publish. Follow stages in order — skipping any stage causes silent failures downstream.
+
+## Core Publishing Rules
+
+- Prefer publishing from the final Markdown file. Do not pre-convert Markdown to HTML unless the user explicitly asks for HTML publishing or the API path is unavailable.
+- Every generated or revised Markdown article should have SEO/GEO-friendly YAML frontmatter before publishing.
+- Use the fixed image host for article assets:
+  - Repository: `mf-blog/blogPictures`
+  - Branch: `main`
+  - Directory: `images/<article-slug>`
+  - Raw URL shape: `https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/<article-slug>/<filename>.png`
+- Reuse one canonical `article-slug` across frontmatter, local image folders, GitHub remote paths, and completion reports.
+- Use `category`, not the misspelled `categery`.
+- Preserve user-authored content. When adding metadata, images, or ending hooks, do not rewrite unrelated article sections.
 
 ---
 
@@ -59,6 +72,22 @@ WeChat's algorithm weights the title heavily for initial distribution. For AI te
 - 不要用"感谢阅读"结尾——用有信息量的总结句
 - 可加："如果你也在用 [工具]，欢迎留言你的用法"——激活评论信号
 
+### WeChat Ending Hook
+
+Every generated or revised WeChat article must end with one short topic-specific engagement hook after the substantive conclusion.
+
+- Invite readers to comment with their own experience or use case.
+- Mention that the discussion may help other domestic developers/readers when relevant.
+- Ask readers to tap `在看` or share if the article was useful.
+- Adapt the hook to the article topic. Do not reuse payment/card-declined examples unless the article is actually about payments.
+- Do not duplicate an existing hook. Update the existing one if it is weak or off-topic.
+- End with this fixed brand follow block:
+
+```markdown
+写 AI，写成长，偶尔写投资。
+关注沐风，不定期更新，全是干货。
+```
+
 ### Timing (发布时间)
 
 微信推荐窗口在发布后的 2-4 小时内最关键。选择：
@@ -88,6 +117,37 @@ Aspect ratio 2.35:1.
 - AI 相关优先选：`#人工智能` `#大模型` `#AI工具` `#程序员` `#Claude` `#ChatGPT` `#Cursor`
 - 每篇文章添加 2-3 个话题标签（过多稀释权重）
 - 话题名与文章关键词一致时搜索权重更高
+
+### SEO/GEO Markdown Frontmatter
+
+Before publishing Markdown, ensure the YAML frontmatter includes:
+
+```yaml
+---
+title: "文章标题"
+slug: article-topic-keyword
+author: changyou
+date: YYYY-MM-DD
+category: AI 编程
+summary: "150-200 字中文摘要，覆盖问题、方案和结果，自然包含核心关键词。"
+tags:
+  - Claude Code
+  - Codex
+  - AI 编程
+coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/article-topic-keyword/cover.png
+---
+```
+
+Rules:
+- `title`: include the core keyword or entity naturally, usually under 60 Chinese characters.
+- `slug`: lowercase ASCII kebab-case only, using `a-z`, `0-9`, and single hyphens.
+- `author`: always `changyou`.
+- `date`: `YYYY-MM-DD`.
+- `category`: one concise human-readable category, such as `AI 编程`, `开发工具`, `iOS 开发`, `后端开发`, `前端开发`, `成长复盘`, or `投资笔记`.
+- `summary`: 150-200 Chinese characters, no Markdown, links, line breaks, or promotional filler.
+- `tags`: 4-8 YAML list items covering the main entity/tool, stack, problem domain, and reader intent. Do not use `#` prefixes here.
+- `coverImage`: add or update after the cover is uploaded to GitHub.
+- If an article already has a good slug, preserve it. If it is missing or poor, replace it and mention the change.
 
 ### Original Mark (原创标识)
 
@@ -198,7 +258,20 @@ Failure modes:
 Upload images to a GitHub repo so WeChat can reference stable CDN URLs. WeChat rejects direct local paths and many third-party CDNs.
 
 ```bash
-# Upload via GitHub API (replace vars):
+# Preferred fixed image host:
+python3 "$HOME/.agents/skills/mufeng-wechat-publish-full/scripts/upload_github_images.py" \
+  --repo "mf-blog/blogPictures" \
+  --branch "main" \
+  --remote-dir "images/<article-slug>" \
+  --json-out "imgs/<article-slug>/github-image-urls.json" \
+  imgs/<article-slug>/cover.png \
+  imgs/<article-slug>/fig-01.png
+```
+
+The helper validates PNG files, appends a timestamp suffix when a remote path already exists, prints raw GitHub URLs, and optionally writes them to JSON for precise Markdown insertion.
+
+```bash
+# Manual fallback via GitHub API:
 gh api repos/OWNER/REPO/contents/images/FILENAME \
   --method PUT \
   --field message="add image" \
@@ -216,9 +289,11 @@ Failure modes:
 
 ---
 
-## Stage 4: HTML Sanitization
+## Stage 4: HTML Sanitization (Fallback Only)
 
-**Always sanitize HTML before publishing. Unsanitized HTML causes WeChat to silently strip content or reject the draft.**
+Prefer direct Markdown publishing. Use this HTML sanitization path only when the user explicitly requests HTML publishing or when the Markdown API path is unavailable.
+
+**Always sanitize HTML before HTML publishing. Unsanitized HTML causes WeChat to silently strip content or reject the draft.**
 
 Required removals:
 
@@ -244,9 +319,31 @@ Failure modes:
 
 ---
 
-## Stage 5: Publish — Required Parameters
+## Stage 5: Publish
 
-**`--title` is mandatory every time. A publish call without `--title` will either fail or create an untitled draft that cannot be recovered without manual editing.**
+### Preferred: Direct Markdown Publish
+
+Read `$HOME/.baoyu-skills/baoyu-post-to-wechat/EXTEND.md` if present for local defaults. Publish the final Markdown file directly:
+
+```bash
+bun /Users/changyou/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
+  <article.md> \
+  --theme default \
+  --author changyou \
+  --cover <cover-url>
+```
+
+Before calling the script:
+- Ensure frontmatter has `title`, `slug`, `author`, `date`, `category`, `summary`, `tags`, and `coverImage`.
+- Ensure `coverImage` and inline images use raw GitHub HTTPS URLs.
+- Ensure the required WeChat ending hook exists exactly once.
+- Include a title explicitly only if it cannot be reliably extracted from frontmatter or the first H1.
+
+If API publishing fails with IP/auth errors, check the current outbound IP and WeChat IP whitelist before retrying.
+
+### Fallback: HTML Publish
+
+Use the older HTML path only when needed. In this path, `--title` is mandatory every time. A publish call without `--title` can fail or create an untitled draft that needs manual repair.
 
 ```bash
 # Correct form — always include --title:
@@ -278,7 +375,8 @@ Run through this in order before every publish:
 - [ ] **Opening**: 前 150 字直接给出核心价值，无背景铺垫
 - [ ] **Images**: 配图必须服务内容；优先真实截图、Mermaid/SVG/HTML 图解、代码截图；imagegen 只用于封面背景或少量章节氛围图
 - [ ] **Cover**: imagegen 只生成无文字背景；标题关键词用 HTML/CSS 或后期 overlay；生成图不得包含中文、logo、假 UI、假代码、人脸、手、机器人
-- [ ] **Ending**: 结尾有引导"在看"或留言的句子
+- [ ] **Frontmatter**: Markdown has `title`, `slug`, `author`, `date`, `category`, `summary`, `tags`, and `coverImage`
+- [ ] **Ending**: 结尾有主题相关 hook，且固定品牌 follow block 只出现一次
 - [ ] **Original**: 已开启原创标识
 - [ ] **Tags**: 已添加 2-3 个相关话题标签（#人工智能 等）
 - [ ] **Timing**: 发布时间在 20:00-22:00 或 12:00-13:00 工作日
@@ -287,13 +385,11 @@ Run through this in order before every publish:
 - [ ] **IP**: Current outbound IP is whitelisted in WeChat MP backend
 - [ ] **Images**: Generated with Google (primary) or DashScope (fallback) only when deterministic visuals are not better
 - [ ] **Images**: AI-look filter passed; no neon/circuits/particles/holograms/fake UI/fake code/garbled text/glossy 3D poster style
-- [ ] **Images**: Uploaded to GitHub; raw HTTPS URLs verified with `curl -I <url>` returning 200
-- [ ] **HTML**: SVG blocks stripped
-- [ ] **HTML**: All `<a href>` hyperlinks stripped (text preserved)
-- [ ] **HTML**: `<script>`, `<style>`, `<iframe>` removed
-- [ ] **HTML**: No `position:fixed/absolute` inline styles
+- [ ] **Images**: Uploaded to `mf-blog/blogPictures/main/images/<article-slug>`; raw HTTPS URLs verified with `curl -I <url>` returning 200
+- [ ] **Markdown publish**: Final `.md` file is used directly with `wechat-api.ts`
+- [ ] **HTML fallback**: If HTML publishing is used, SVG blocks and `<a>`, `<script>`, `<style>`, `<iframe>` tags are sanitized
 - [ ] **Command**: `bun` used (not `npx`)
-- [ ] **Command**: `--title` parameter present and non-empty
+- [ ] **Command**: HTML fallback includes non-empty `--title`; Markdown path has extractable frontmatter title or H1
 - [ ] **Verify**: Draft visible in WeChat MP backend before triggering publish
 
 ---
@@ -306,6 +402,7 @@ Run through this in order before every publish:
 | Timing | 工作日 20:00-22:00 发布 | 周一早晨或节假日发 |
 | IP check | Do before any API call | Assuming IP hasn't changed |
 | Image gen | 封面只生成无文字背景；正文优先截图/图解/代码截图；通过 AI-look filter | 用霓虹、电路、粒子、假 UI 做科技海报 |
-| GitHub upload | Unique filename, HTTPS raw URL | Reusing filename → 422 error |
-| HTML sanitize | Strip SVG + `<a>` tags | Forgetting SVG strips |
-| Publish | `--title` required, use `bun`; enable 原创 + 话题标签 | Missing `--title`; forgetting 原创 mark |
+| Frontmatter | `slug/category/summary/tags/coverImage` present before publishing | Only putting summary/tags in body |
+| GitHub upload | Fixed `mf-blog/blogPictures` path, helper script, HTTPS raw URL | Reusing filename manually → 422 error |
+| HTML sanitize | Fallback only; strip SVG + `<a>` tags | Pre-converting Markdown unnecessarily |
+| Publish | Prefer direct Markdown with `wechat-api.ts`; use `bun`; enable 原创 + 话题标签 | Using HTML path by default; forgetting 原创 mark |
