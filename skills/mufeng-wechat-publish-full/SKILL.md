@@ -1,13 +1,13 @@
 ---
 name: mufeng-wechat-publish-full
-description: Use when publishing articles to WeChat Official Account (微信公众号), including tasks that involve generating images, uploading assets to GitHub, converting markdown to HTML, or calling the WeChat API. Also use when any step of a previous WeChat publish attempt failed. Includes AI tech blog content strategy for maximizing WeChat platform recommendation (推荐曝光).
+description: Use when publishing articles to WeChat Official Account (微信公众号), including tasks that involve professional article visuals, background-only cover generation, deterministic screenshots or diagrams before imagegen, uploading assets to GitHub, converting markdown to HTML, or calling the WeChat API. Also use when any step of a previous WeChat publish attempt failed. Includes AI tech blog content strategy for maximizing WeChat platform recommendation (推荐曝光).
 ---
 
-# WeChat Full Publishing Workflow
+# Mufeng WeChat Full Publishing Workflow
 
 ## Overview
 
-End-to-end skill for publishing AI tech blog articles to a WeChat Official Account. Covers every stage: content strategy for platform recommendations, IP verification, image generation (DashScope only), GitHub asset upload, HTML sanitization, and final publish. Follow stages in order — skipping any stage causes silent failures downstream.
+End-to-end skill for publishing AI tech blog articles to a WeChat Official Account. Covers every stage: content strategy for platform recommendations, IP verification, image generation (Google with DashScope fallback), GitHub asset upload, HTML sanitization, and final publish. Follow stages in order — skipping any stage causes silent failures downstream.
 
 ---
 
@@ -19,18 +19,20 @@ WeChat's recommendation system (看一看/搜一搜/流量主) surfaces articles
 
 WeChat's algorithm weights the title heavily for initial distribution. For AI tech:
 
-**Winning patterns:**
-- `我用 [工具] 做了 [具体事]，[惊人结果]` — e.g., "我用 Claude 一小时写完了原本三天的需求文档"
-- `[模型/工具名] 的 [N 个] 隐藏用法，99% 的人不知道`
-- `[新模型] 实测：[具体对比维度]` — e.g., "Claude 4 实测：代码能力到底比 GPT-4o 强多少"
-- `[问题场景]，[工具] 给出了让我震惊的答案`
-- 带数字的标题完读率高于无数字标题（如"5 个技巧"优于"一些技巧"）
+**四种有效结构（四选一）：**
+- `[具体工具/场景] + 实测/亲测 + 结论` — e.g., "我用 Claude 做了三个月 AI 助手，说几句真实感受"
+- `[反常识结论] + 原因` — e.g., "别急着学提示词，先搞清楚这件事"
+- `[数字/量化] + 行动 + 收益` — e.g., "10 个让 Claude Code 效率翻倍的使用习惯"
+- `[读者痛点] + 解法` — e.g., "AI 工具用了一年，我踩过的最贵的坑"
+
+带数字的标题完读率高于无数字标题（如"5 个技巧"优于"一些技巧"）。
 
 **Title rules:**
-- 长度：18-24 个汉字（移动端不截断的最优范围）
-- 避免标题党措辞（微信会降权）：不用"震惊""万万没想到""赶紧转"
-- 第一个词尽量是热词：AI、大模型、Claude、GPT、DeepSeek、Cursor 等
+- 长度：18-26 个汉字（含标点），不超过 30 字
+- 避免标题党措辞（微信会降权）：不用"震惊""万万没想到""99% 的人不知道""赶紧转"
+- AI 技术类关键词前置：Claude、MCP、Agent、Cursor、提示词、大模型等核心词放标题前半段，利于搜索收录
 - 不用问号结尾——微信算法对疑问句标题分发更保守
+- 每次输出 3 个标题备选（利益驱动型 / 反常识型 / 代入感型），让作者选择
 
 **Bad → Good examples:**
 - ❌ "分享一些 AI 工具使用心得" → ✓ "用了 3 个月 Cursor，整理出这 8 个真正提效的用法"
@@ -68,9 +70,17 @@ WeChat's algorithm weights the title heavily for initial distribution. For AI te
 
 封面图决定分享卡片点击率：
 - **比例**：2.35:1（横版）用于文章列表；1:1 用于分享卡片
-- **AI 科技主题风格**：深色背景 + 高对比度文字 + 科技感视觉元素（电路、粒子、代码片段）
-- **文字要求**：封面图上必须有标题关键词（3-6 个字）；用 HTML text overlay 而非 AI 生成文字
-- 避免纯文字封面（低视觉吸引力）；避免人脸过多（微信审核敏感）
+- **生成策略**：imagegen 只生成无文字专业背景；标题关键词（3-6 个字）必须用 HTML/CSS 或后期 overlay 添加
+- **视觉方向**：专业技术媒体配图；真实、克制、留白充足；避免一眼看出是 AI 科技海报
+- **禁止元素**：不要让 imagegen 生成中文、标题、UI、logo、人脸、手、机器人、发光电路、霓虹、粒子、全息屏、赛博风、假代码
+- **推荐封面 prompt 模板**：
+
+```text
+Professional editorial cover background for a Chinese software engineering article about [topic].
+Realistic but restrained tech workspace: laptop, notebook, subtle code editor shapes on screen, clean desk, natural light, muted neutral colors, precise composition, generous negative space for title overlay.
+No readable text, no logos, no Chinese characters, no fake UI, no people, no hands, no robots, no glowing circuits, no neon, no particles, no holograms, no cyberpunk style, no fantasy, no 3D plastic look.
+Aspect ratio 2.35:1.
+```
 
 ### Tags & Category (话题标签)
 
@@ -127,23 +137,59 @@ Failure modes:
 
 ---
 
-## Stage 2: Image Generation — DashScope Only
+## Stage 2: Image Generation
 
-**Always use DashScope. Do NOT use Google API (quota exhausts silently).**
+**Prefer Google API (Gemini); fallback to DashScope if Google fails or quota is exhausted.**
 
-Use the `content-skills:baoyu-image-gen` skill with explicit provider flag:
+For professional technical blog visuals, do not make imagegen explain technical concepts. Use this priority order for inline images:
+
+1. Real screenshots: terminal output, IDE, config files, product UI, benchmark results
+2. Deterministic diagrams: Mermaid, SVG, HTML/CSS architecture diagrams, flowcharts, comparison tables
+3. Code snippet screenshots with clean typography and a short caption
+4. Imagegen only for cover backgrounds or subtle section illustrations
+
+Use imagegen for cover backgrounds only after deciding the topic and title. Generated covers must be background-only: no readable text, no Chinese characters, no fake UI, no logo, no people, no hands. Add title keywords later with deterministic HTML/CSS or image editing overlay.
+
+### Visual Presets
+
+Pick one preset before creating any image:
+
+- `editorial-workspace`: Realistic desk, laptop, notebook, blurred code editor, natural light, muted neutral colors
+- `clean-technical-diagram`: Mermaid/SVG/HTML diagram; do not use imagegen
+- `product-screenshot-composite`: Real screenshot plus simple annotations on a clean background
+- `minimal-cover-background`: Spacious editorial background with large empty area for title overlay
+- `conceptual-object`: Concrete object metaphor such as blocks, routing cards, folders, pipeline nodes, or decision boards; no sci-fi elements
+
+### AI-Look Rejection Filter
+
+After image generation, inspect the image. Reject and regenerate if any of these appear:
+
+- Glowing circuits, blue-purple neon, particle streams, holograms, cyberpunk lighting
+- Fake code, garbled text, fake Chinese, fake UI, fake logos
+- Overly glossy 3D icons or plastic-looking objects
+- Floating UI panels or impossible screen elements
+- Robots, faces, hands, or human figures
+- Overcrowded composition with no negative space for title overlay
+- Anything that looks like a Midjourney tech poster instead of a professional technical media image
+
+Use the `content-skills:baoyu-image-gen` skill only when the image passes the visual strategy above. By default, it will use your preferred provider. To force a fallback:
 
 ```bash
-# Always pass --provider dashscope explicitly
+# Try Google first (default behavior or explicit)
+bun run image-gen --prompt "..." --aspect-ratio 16:9
+
+# Fallback to DashScope if Google fails
 bun run image-gen --provider dashscope --prompt "..." --aspect-ratio 16:9
 ```
 
 Failure modes:
-- [ ] Google API used instead of DashScope → regenerate with DashScope
-- [ ] Chinese text in image is garbled/blurry → known limitation; use overlay text in HTML instead of embedding Chinese in the prompt
+- [ ] Google API fails/quota exceeded → fallback to DashScope
+- [ ] Chinese text in image is garbled/blurry → never embed Chinese in generated images; use overlay text in HTML/CSS or post-processing
+- [ ] Cover looks AI-generated → remove sci-fi terms from the prompt, choose `minimal-cover-background` or `editorial-workspace`, and regenerate
+- [ ] Inline image needs to explain architecture/process → use Mermaid/SVG/HTML instead of imagegen
 - [ ] DashScope quota exceeded → check DashScope console; switch model tier or wait
 - [ ] Image returned but too small → specify `--quality 2k` or `--quality 4k`
-- [ ] No image output, no error → DashScope endpoint timeout; retry once; if still failing, check API key
+- [ ] No image output, no error → API endpoint timeout; retry once; if still failing, check API key
 
 ---
 
@@ -230,7 +276,8 @@ Run through this in order before every publish:
 **Content strategy:**
 - [ ] **Title**: 18-24 字，首词为 AI 热词，无标题党措辞，含数字或具体场景
 - [ ] **Opening**: 前 150 字直接给出核心价值，无背景铺垫
-- [ ] **Images**: 每 400-600 字有一张图；封面图有文字 overlay 关键词
+- [ ] **Images**: 配图必须服务内容；优先真实截图、Mermaid/SVG/HTML 图解、代码截图；imagegen 只用于封面背景或少量章节氛围图
+- [ ] **Cover**: imagegen 只生成无文字背景；标题关键词用 HTML/CSS 或后期 overlay；生成图不得包含中文、logo、假 UI、假代码、人脸、手、机器人
 - [ ] **Ending**: 结尾有引导"在看"或留言的句子
 - [ ] **Original**: 已开启原创标识
 - [ ] **Tags**: 已添加 2-3 个相关话题标签（#人工智能 等）
@@ -238,7 +285,8 @@ Run through this in order before every publish:
 
 **Technical:**
 - [ ] **IP**: Current outbound IP is whitelisted in WeChat MP backend
-- [ ] **Images**: Generated with DashScope (not Google); no Chinese text embedded in image
+- [ ] **Images**: Generated with Google (primary) or DashScope (fallback) only when deterministic visuals are not better
+- [ ] **Images**: AI-look filter passed; no neon/circuits/particles/holograms/fake UI/fake code/garbled text/glossy 3D poster style
 - [ ] **Images**: Uploaded to GitHub; raw HTTPS URLs verified with `curl -I <url>` returning 200
 - [ ] **HTML**: SVG blocks stripped
 - [ ] **HTML**: All `<a href>` hyperlinks stripped (text preserved)
@@ -254,10 +302,10 @@ Run through this in order before every publish:
 
 | Stage | Key Rule | Common Mistake |
 |-------|----------|----------------|
-| Content strategy | 标题 18-24 字 + AI 热词；前 150 字直给价值；结尾引导"在看" | 标题模糊无热词；从背景铺垫开篇 |
+| Content strategy | 标题 18-26 字 + AI 热词前置；前 150 字直给价值；结尾引导"在看" | 用标题党措辞；从背景铺垫开篇 |
 | Timing | 工作日 20:00-22:00 发布 | 周一早晨或节假日发 |
 | IP check | Do before any API call | Assuming IP hasn't changed |
-| Image gen | DashScope always | Using Google API (silent quota failure) |
+| Image gen | 封面只生成无文字背景；正文优先截图/图解/代码截图；通过 AI-look filter | 用霓虹、电路、粒子、假 UI 做科技海报 |
 | GitHub upload | Unique filename, HTTPS raw URL | Reusing filename → 422 error |
 | HTML sanitize | Strip SVG + `<a>` tags | Forgetting SVG strips |
 | Publish | `--title` required, use `bun`; enable 原创 + 话题标签 | Missing `--title`; forgetting 原创 mark |
