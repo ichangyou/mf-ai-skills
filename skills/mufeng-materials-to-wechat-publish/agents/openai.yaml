@@ -1,4 +1,4 @@
 interface:
   display_name: "mufeng-materials-to-wechat-publish"
-  short_description: "Source materials to a WeChat article with metadata, images, and publish"
-  default_prompt: "Use $mufeng-materials-to-wechat-publish to turn this directory's source materials into a professional WeChat article, add SEO/GEO-friendly frontmatter, generate PNG cover and inline illustrations, upload images to the fixed GitHub image host, insert raw URLs, and publish from Markdown."
+  short_description: "WeChat articles with search research and quality gates"
+  default_prompt: "Use $mufeng-materials-to-wechat-publish to research current WeChat search intent, turn this directory's source materials into a quality-gated article with natural keyword mapping and a 90-120-character digest, place the uploaded cover first, host images in the fixed GitHub repository, and publish from Markdown."
