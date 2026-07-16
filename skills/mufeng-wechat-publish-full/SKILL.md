@@ -326,7 +326,7 @@ Failure modes:
 Read `$HOME/.baoyu-skills/baoyu-post-to-wechat/EXTEND.md` if present for local defaults. Publish the final Markdown file directly:
 
 ```bash
-bun /Users/changyou/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
+bun ~/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
   <article.md> \
   --theme default \
   --author changyou \

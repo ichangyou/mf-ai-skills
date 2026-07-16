@@ -282,7 +282,7 @@ python3 "$HOME/.agents/skills/mufeng-materials-to-wechat-publish/scripts/upload_
    - Use the existing baoyu script directly:
 
 ```bash
-bun /Users/changyou/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
+bun ~/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
   <article.md> \
   --theme default \
   --author changyou \

@@ -104,7 +104,7 @@ python3 "$HOME/.agents/skills/mufeng-wechat-publish-full/scripts/upload_github_i
 优先使用 Markdown 发布路径：
 
 ```bash
-bun /Users/changyou/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
+bun ~/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
   <article.md> \
   --theme default \
   --author changyou \
