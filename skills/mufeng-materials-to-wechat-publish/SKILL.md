@@ -14,13 +14,15 @@ description: Use when source materials in a directory, such as notes, drafts, tr
 - Research current WeChat search intent before drafting. Choose one primary query and 3-6 supporting terms from verifiable current evidence; if live WeChat search evidence is unavailable, label the proxy source and uncertainty instead of inventing demand.
 - Map keywords naturally into the title, opening, useful H2 headings, summary, and relevant body sections. Treat YAML `tags` as internal metadata, not as a WeChat ranking signal or a substitute for body relevance.
 - Use the uploaded cover in both places: as `coverImage`/`--cover` publishing metadata and as the first rendered element of the WeChat article body. Put its Markdown image immediately after the H1 so the renderer can strip the H1 while leaving the cover first; place no text, visible metadata, caption, or divider before it.
-- Every generated or substantially revised article must pass the evidence and authenticity gate: real screenshots when available, personal experience, at least one failure/lesson, related article recommendations, 2-3 authoritative sources, and a concise real development-process section.
+- Every generated or substantially revised article must pass the evidence and authenticity gate: real screenshots when available, personal experience, at least one failure/lesson, related article recommendations, and 2-3 authoritative sources.
 - Before publishing, pass the originality, account-fit, title-integrity, and low-quality-content gates. Revise failures; stop before publishing when a material failure cannot be fixed from available evidence.
 - Every generated Markdown article must be Emoji-free except for the exact footer declaration line `📌 声明：本文由 AI 辅助完成`.
 - Use Codex built-in image generation only for new cover and illustration images. Do not call OpenAI Images API, `baoyu-image-gen`, Google, DashScope, or other image CLIs unless the user explicitly asks to switch.
 - Do not use generated images as replacements for real screenshots. Real screenshots are evidence assets; never fabricate Codex, Claude, revenue, analytics, or project UI screenshots.
+- Default generated visuals to a restrained, article-specific technical-editorial direction. Do not default to neon gradients, glowing networks, floating interfaces, glossy 3D objects, robots, brains, circuit heads, or other recognizable generative-AI clichés.
 - Save generated images as PNG. If a generated asset is not PNG, convert it to PNG before upload.
 - Keep generated images free of readable UI text, Chinese text, labels, captions, watermarks, and signatures unless the user explicitly requests text in the image. Put titles/captions in Markdown instead.
+- Do not add a `真实开发过程` section or any equivalent meta-production section about how materials, logs, commands, research, or screenshots were assembled into the article. Keep reader-relevant evidence inside the topical sections and keep workflow notes in the completion report.
 - Upload the cover and all inline visual assets to GitHub image hosting, then insert `https://raw.githubusercontent.com/...` URLs into the Markdown article.
 - Publish from the final Markdown file. Do not pre-convert Markdown to HTML before calling the WeChat publishing script.
 
@@ -36,7 +38,7 @@ Outputs:
 - SEO/GEO-friendly frontmatter with `title`, `slug`, `author`, `date`, `category`, `summary`, `tags`, and uploaded `coverImage`.
 - A documented WeChat search brief with the primary intent, primary query, 3-6 supporting terms, evidence source, and research date.
 - A body that starts with the uploaded cover image after the Markdown H1 and contains no visible summary or tag metadata blocks.
-- Article body with evidence-backed sections: real screenshots or a documented reason for absence, personal experience, failure/lesson, real development process, authoritative sources, and related article recommendations.
+- Article body with evidence-backed content: real screenshots when available, personal experience, failure/lesson, authoritative sources, and related article recommendations.
 - Local PNG images under `imgs/<article-slug>/`.
 - Uploaded raw GitHub image URLs under `https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/<article-slug>/...`.
 - A final WeChat draft or publish result when publishing is not explicitly skipped.
@@ -45,7 +47,7 @@ Non-goals:
 - Do not rewrite a finished article from scratch unless the user asks for a rewrite.
 - Do not use generated images as generic decoration; each inline image should explain or reinforce nearby content.
 - Do not publish before the article has metadata, image URLs, and the required ending hook.
-- Do not invent personal experience, screenshots, income numbers, project results, source citations, or related-article URLs. If evidence is unavailable, say so and either omit that element with a reason or use a clearly labeled non-evidence illustration.
+- Do not invent personal experience, screenshots, income numbers, project results, source citations, or related-article URLs. If evidence is unavailable, record the gap in the completion report and omit the unsupported element or use a clearly labeled non-evidence illustration.
 
 ## Markdown Emoji Rules
 
@@ -60,6 +62,35 @@ Non-goals:
 - If the `mufeng-blog-writing` footer rule is used, keep only the exact allowed declaration line above. Do not add other Emoji to timestamp, location, call-to-action, headings, or section separators.
 - Before publishing, scan the final Markdown for Emoji. If any Emoji exists outside the exact allowed declaration line, remove it and re-check.
 
+## Technical Blog Image Art Direction
+
+Apply these rules to every generated cover and inline illustration:
+
+- Derive the visual from the article's concrete subject, system relationship, tool, or decision. Extract 2-4 topic-specific nouns before prompting; do not substitute a generic `AI + code + network` scene.
+- When recent covers or illustrations are readily available locally, inspect 6-10 relevant examples before generating. Identify repeated palettes, compositions, materials, and metaphors, then choose a meaningfully different direction unless a fixed brand treatment requires continuity.
+- Choose the visual form by function:
+  - Use a restrained editorial schematic for architecture, data flow, state, synchronization, dependencies, or comparisons.
+  - Use a quiet technical still life or product-like composition for tools, hardware, workflows, and concrete objects.
+  - Use a minimal geometric or print-editorial metaphor for abstract decisions, constraints, tradeoffs, and failure modes.
+  - Use a real screenshot or a deterministic locally rendered diagram when exact UI, code, labels, arrow directions, or numeric relationships matter. Do not ask ImageGen to invent precision.
+- Keep the visual language simple and elegant: one focal idea, ample negative space, clear hierarchy, balanced asymmetry or a disciplined grid, consistent geometry, and only enough detail to explain the concept.
+- Use a restrained palette of 2-4 colors. Prefer warm white, paper, stone, ink, graphite, or other quiet neutrals with one muted accent; use stronger colors only when the subject genuinely calls for them.
+- Prefer tactile, believable materials and subtle texture such as paper grain, matte metal, glass, or soft natural shadow. Preserve small physical imperfections when they make a still life feel authored rather than synthetic.
+- Avoid the common generative-AI look: blue-purple neon gradients, cyan glow, luminous network nodes, holograms, floating dashboards, glassmorphism, glossy plastic, chrome blobs, excessive 3D, isometric server stacks, robots, humanoid brains, circuit-board heads, random particles, light trails, impossible architecture, cinematic bloom, dramatic sci-fi lighting, and dense ornamental detail.
+- Keep a single article visually coherent without cloning the same composition. The cover and inline illustrations may share palette or line language, but vary framing and make each image perform a distinct explanatory job.
+- Do not use a centered glowing object on a dark gradient as the default cover. Favor light or neutral grounds unless the topic specifically benefits from a dark treatment.
+- Keep all generated visuals text-free unless the user explicitly requests text. Put exact terminology, captions, and explanations in Markdown.
+
+Build each ImageGen prompt from these fields:
+
+1. **Purpose:** cover or the exact nearby concept the image must explain.
+2. **Concrete subject:** the topic-specific objects, components, or relationship to depict.
+3. **Visual form:** editorial schematic, technical still life, restrained geometric illustration, or another justified form.
+4. **Composition:** aspect ratio, focal placement, negative space, hierarchy, and camera/viewpoint when relevant.
+5. **Palette and material:** 2-4 named colors plus paper, ink, metal, glass, or another restrained material language.
+6. **Rendering constraints:** text-free, no watermark, no fake UI, clean edges, technically plausible relationships.
+7. **Exclusions:** list the relevant AI clichés from the prohibition above, plus any palette or composition already overused in recent local images.
+
 ## Article Evidence and Authenticity Rules
 
 Apply these rules to every generated or substantially revised article unless the user explicitly asks to skip them. If a rule cannot be satisfied from available materials or verifiable sources, do not fake it; document the gap in the completion report and, when the gap weakens the article, stop before publishing.
@@ -67,7 +98,7 @@ Apply these rules to every generated or substantially revised article unless the
 ### Real Screenshots
 
 - Include at least one real screenshot when source materials, local project UIs, terminal output, Codex/Claude sessions, dashboards, or user-provided screenshots are available.
-- Prefer screenshots that prove the article's claims: Codex or Claude development process, terminal/test/build output, project interface, product result, revenue/analytics dashboard, or configuration screen.
+- Prefer screenshots that prove the article's claims: terminal/test/build output, project interface, product result, revenue/analytics dashboard, or configuration screen.
 - For income, revenue, analytics, or account screenshots, only use user-provided or locally available screenshots. Redact private data, tokens, emails, customer names, order IDs, and unrelated balances before upload.
 - Do not generate fake UI screenshots. If no real screenshot is available, use a deterministic diagram or generated illustration only as supporting visual material, and do not describe it as a screenshot.
 
@@ -77,19 +108,14 @@ Apply these rules to every generated or substantially revised article unless the
 - Include at least one failure case, wrong turn, limitation, or lesson learned. Good examples: a failed prompt, broken build, rejected publish attempt, misleading metric, unusable generated image, or implementation shortcut that later caused rework.
 - Keep claims bounded. Use exact numbers only when they appear in source material or verified local artifacts; otherwise use qualitative wording.
 
-### Real Development Process
-
-- Add a concise section such as `## 真实开发过程` or weave the process into the body when a separate section would feel forced.
-- Base it on actual work performed in this session or source materials: files inspected, commands run, prompts used, code/design decisions, errors encountered, tests/checks run, and final verification.
-- Mention sensitive details only after redaction. Do not include secrets, private tokens, unpublished customer data, or irrelevant local paths.
-
 ### Authoritative Sources
 
 - Cite at least 2 authoritative sources, target 3 when the topic supports it.
 - Prefer primary or high-authority sources: official documentation, release notes, standards/specs, academic papers, vendor engineering blogs, government/regulatory pages, or original benchmark/data sources.
-- For fast-moving AI/tooling topics, verify sources during the task instead of relying on memory. Record source title, publisher, URL, and access date when practical.
+- For fast-moving AI/tooling topics, verify sources during the task instead of relying on memory. Keep any research or verification date in the private search brief or completion report, not in the visible reference entry.
 - Do not cite unverifiable secondary summaries as authority when an official source exists. Do not invent source titles, URLs, dates, benchmark numbers, or quotes.
 - Add a `## 参考资料` section near the end using concise bullets. Keep links as Markdown links if the publishing pipeline supports them; otherwise include source names and plain URLs.
+- Format visible reference entries with the source title, publisher when useful, and URL. Never append access-date wording such as `访问日期`, `检索日期`, `Accessed`, or `Retrieved`. Preserve a verified publication or release date only when it is materially relevant to the citation.
 
 ### Related Articles
 
@@ -189,7 +215,7 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/s
    - If the user gives a directory, use that directory. Otherwise use the current working directory.
    - Treat Markdown, text notes, transcripts, outlines, code snippets, screenshots/OCR notes, and other user-provided files in that directory as source material.
    - Ignore build/cache/vendor folders, generated image folders, previous WeChat output folders, and existing `github-image-urls.json` files.
-   - Identify available real screenshots and evidence assets before drafting: Codex/Claude process, project UI, terminal/test output, analytics/revenue screenshots, code diffs, diagrams, and existing article screenshots.
+   - Identify available real screenshots and evidence assets before drafting: project UI, terminal/test output, analytics/revenue screenshots, code diffs, diagrams, and existing article screenshots.
    - Identify personal-experience material: project context, decisions, mistakes, failed attempts, tradeoffs, and results.
    - Identify source needs: list the claims that require 2-3 authoritative references, then verify those references before finalizing the article.
    - Identify related-article candidates from the user's local/published writing when possible. Verify titles and URLs/paths before recommending them.
@@ -202,7 +228,9 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/s
    - Generate a professional Chinese WeChat Official Account article as Markdown. It should be publish-ready, with frontmatter `title`, `slug`, `author: changyou`, `date: YYYY-MM-DD`, `category`, `summary`, and `tags`, plus a clear `#` title and practical structure.
    - Do not generate visible `摘要` or `标签` blocks before the main body. Store both values only in YAML frontmatter, overriding the `mufeng-blog-writing` output-format default.
    - Apply the keyword map while drafting: primary query in the title, direct intent answer in the opening, a natural H2 variant, and supporting terms only in relevant sections. Do not retrofit repeated keywords after drafting.
-   - Include the evidence and authenticity requirements: real screenshot placements or documented absence, personal experience, at least one failure/lesson, real development process, `参考资料`, and `相关阅读`.
+   - Include the evidence and authenticity requirements: real screenshot placements when available, personal experience, at least one failure/lesson, `参考资料`, and `相关阅读`.
+   - Do not add a standalone or disguised `真实开发过程`/`材料整理过程`/`证据链合成过程` section. Do not narrate files inspected, commands run, source-count inventory, research steps, or missing screenshots as article content.
+   - In `参考资料`, omit access dates and access-date phrases. Keep verification dates only in the non-visible search brief or completion report.
    - Remove all Emoji from the generated article except the exact `📌 声明：本文由 AI 辅助完成` footer declaration line.
    - Put `参考资料` and `相关阅读` after the substantive conclusion and before the required WeChat ending hook.
    - Append the required WeChat ending hook before saving the article.
@@ -212,6 +240,8 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/s
 3. Read the generated article and make an image plan.
    - Use one cover image.
    - Prioritize real screenshots for evidence-heavy sections. Use generated illustrations only for the cover or for ideas that cannot be shown with real artifacts.
+   - For every generated visual, record its purpose, concrete topic-specific subject, chosen visual form, composition, restrained palette/material language, and exclusions.
+   - Inspect 6-10 recent relevant local covers or illustrations when available, and avoid repeating their dominant palette, centered-object layout, or metaphor.
    - Add inline screenshots or illustrations at natural breakpoints: after the opening setup, before dense technical sections, after major H2 sections, or near claims that need visual proof.
    - Avoid inserting images inside code blocks, tables, lists, blockquotes, or YAML frontmatter.
    - For short articles, use 1-2 inline visuals. For long articles, use roughly one visual per 600-900 Chinese characters or per major section, capped unless the user asks for many.
@@ -220,14 +250,19 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/s
    - Recommended local layout: `imgs/<article-slug>/cover.png`, `imgs/<article-slug>/shot-01.png`, `imgs/<article-slug>/fig-01.png`.
    - Copy, redact, crop, or convert real screenshots into this folder as PNGs. Keep screenshot filenames distinct from generated figure filenames.
    - Generate cover and optional illustration PNGs with Codex image generation.
-   - Cover prompt: ask for a wide 2.35:1 or 16:9 editorial/tech composition with clear focal area and no text.
-   - Illustration prompts: make each image explain the nearby idea visually, not generic decoration.
-   - If the article is technical, prefer diagrams, metaphors, product/workflow scenes, or abstract system visuals that match the surrounding section.
+   - Build each prompt with the seven fields in `Technical Blog Image Art Direction`; include the specific article concept and explicit exclusions instead of asking only for an `editorial/tech` image.
+   - For the cover, use a wide 2.35:1 or 16:9 composition with a clear focal idea, generous negative space, a restrained 2-4-color palette, and no text.
+   - For inline illustrations, explain exactly one nearby idea. Prefer a precise schematic, quiet still life, or minimal print-editorial metaphor over generic abstract system visuals.
+   - If exact labels, arrows, UI states, code, or numeric relationships are essential, use a verified screenshot or render a deterministic diagram locally and save it as PNG; do not rely on ImageGen for exact technical notation.
 
 5. Validate image files, article evidence, search alignment, and content quality.
    - Confirm each image asset exists, is non-empty, and is PNG.
    - Prefer keeping each PNG under 5 MB. Compress or resize only if upload/publish tools reject the file.
-   - Confirm the article includes or intentionally documents the absence of: real screenshots, personal experience, failure/lesson, real development process, 2-3 authoritative sources, and related recommendations.
+   - Confirm generated visuals are article-specific, restrained, legible at article width, and free of the prohibited AI clichés. Reject and regenerate generic neon/glowing-network/floating-UI/glossy-3D results.
+   - Compare generated visuals with the recent local examples inspected in the image plan. Regenerate when the dominant palette, central composition, or metaphor is substantially the same without a topic-driven reason.
+   - Confirm the article includes: real screenshots when available, personal experience, failure/lesson, 2-3 authoritative sources, and related recommendations.
+   - Confirm no `真实开发过程` or equivalent meta-production section remains in the article.
+   - Confirm visible `参考资料` entries contain no access-date wording or appended access dates.
    - Confirm `summary` is 90-120 Chinese characters and accurately describes the published body without promotional filler.
    - Confirm the title, opening, at least one useful H2, and relevant body sections implement the keyword map naturally. Remove repetitions added only for ranking.
    - Run the originality, account-fit, title-integrity, and low-quality-content gates. Revise every failure before continuing.
@@ -282,7 +317,7 @@ python3 "$HOME/.agents/skills/mufeng-materials-to-wechat-publish/scripts/upload_
    - Use the existing baoyu script directly:
 
 ```bash
-bun ~/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
+bun /Users/changyou/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
   <article.md> \
   --theme default \
   --author changyou \
@@ -308,10 +343,13 @@ Do not publish until this checklist has been checked against the final Markdown:
 - [ ] The first rendered body element is the uploaded cover image: in Markdown it appears immediately after the H1, with no text, caption, or divider before it.
 - [ ] At least one real screenshot is included when available, and every screenshot is redacted as needed.
 - [ ] Generated images are used only as cover/illustrations, not as fake product, revenue, Codex, or Claude screenshots.
+- [ ] Each generated visual is tied to a concrete article concept, uses a restrained 2-4-color palette and clear hierarchy, and avoids the prohibited AI clichés.
+- [ ] Recent relevant local images were compared when available; the new cover does not repeat their dominant palette, centered-object composition, or metaphor without a topic-driven reason.
 - [ ] The article contains concrete personal experience grounded in the source material or actual development session.
 - [ ] The article includes at least one failure case, limitation, wrong turn, or lesson learned.
-- [ ] The article describes the real development process: inspected materials, implementation choices, commands/checks, errors, and verification.
+- [ ] The article contains no `真实开发过程`, `材料整理过程`, `证据链合成过程`, or equivalent meta-production section.
 - [ ] The article cites 2-3 authoritative sources in `参考资料`; fast-moving facts have been verified during the task.
+- [ ] Visible `参考资料` entries do not contain `访问日期`, `检索日期`, `Accessed`, `Retrieved`, or appended access dates.
 - [ ] The article includes `相关阅读` with verified titles/links/paths, or the absence is documented.
 - [ ] No Emoji appears anywhere in the final Markdown except the exact line `📌 声明：本文由 AI 辅助完成`.
 - [ ] The final engagement hook and fixed brand follow block are present exactly once.
@@ -337,11 +375,14 @@ Report:
 - Body-opening check: confirm visible summary/tag blocks were removed and the cover is the first rendered body element.
 - Generated article path.
 - Article path changed.
-- Evidence inventory: real screenshots used, personal experience added, failure/lesson added, and real development-process section added.
+- Evidence inventory: real screenshots used, personal experience added, and failure/lesson added.
+- Article-structure check: confirm no real-development-process or other meta-production section was added.
 - Authoritative sources cited, including count and whether they were verified during the task.
+- Reference-format check: confirm visible references omit access dates and access-date wording.
 - Related articles recommended, including titles and URLs/paths when available.
 - Emoji check result: confirm no Emoji remains outside `📌 声明：本文由 AI 辅助完成`.
 - Whether the required WeChat ending hook was added or preserved.
+- Image direction used: subject, visual form, palette/material language, comparison against recent local images when available, and AI-cliché check result.
 - Cover URL and inline image URLs.
 - WeChat publishing method and result, including draft `media_id` if the API returns one.
 - Any skipped step or manual action still required.
