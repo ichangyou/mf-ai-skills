@@ -45,6 +45,9 @@ EXCLUDED_DIRS = {
 GENERATION_PLAN_NAME = "generation_tasks.json"
 PROGRESS_LOG_NAME = "progress.jsonl"
 REFERENCE_MANIFEST_NAME = "reference_manifest.json"
+QUALITY_GATE_NAME = "quality_gate.json"
+CANDIDATE_DIR_NAME = "candidates"
+QA_REPORT_DIR_NAME = "qa_reports"
 MAX_REFERENCES_PER_TASK = 3
 REFERENCE_MAX_EDGE = 1024
 REFERENCE_JPEG_QUALITY = 85
@@ -56,6 +59,30 @@ PROGRESS_EVENTS = {
     "generation_returned",
     "generation_failed",
     "persistence_failed",
+}
+QA_VERDICTS = {"pass", "fail", "needs_review"}
+QA_CHECK_RESULTS = {"pass", "fail", "not_applicable"}
+GENERIC_FINAL_FOOTERS = {"绘本", "故事绘本", "storybook", "story book"}
+BUILTIN_QA_CHECKS = (
+    "scene_match",
+    "character_continuity",
+    "style_continuity",
+    "composition_clarity",
+    "anatomy_integrity",
+    "no_readable_text",
+)
+QA_CONTRACT_KEYS = {
+    "risk_level",
+    "required_entities",
+    "forbidden_entities",
+    "exact_counts",
+    "identity_states",
+    "relationships",
+    "weapons",
+    "props",
+    "height_rules",
+    "custom_checks",
+    "reference_bindings",
 }
 
 
@@ -73,6 +100,7 @@ class Scene:
     expected_image: str = ""
     task_id: str = ""
     references: List[str] = field(default_factory=list)
+    qa: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -262,6 +290,214 @@ def scene_task_id(scene: Scene) -> str:
     return f"scene-{scene.number:02d}-{digest}"
 
 
+def normalize_string_list(value: object, label: str) -> List[str]:
+    if value in (None, []):
+        return []
+    if not isinstance(value, list) or not all(
+        isinstance(item, str) and item.strip() for item in value
+    ):
+        raise RuntimeError(f"{label} must be a list of non-empty strings.")
+    result: List[str] = []
+    seen = set()
+    for item in value:
+        normalized = item.strip()
+        key = unicodedata.normalize("NFKC", normalized).casefold()
+        if key in seen:
+            raise RuntimeError(f"{label} repeats value: {normalized}")
+        seen.add(key)
+        result.append(normalized)
+    return result
+
+
+def normalize_string_map(value: object, label: str) -> Dict[str, str]:
+    if value in (None, {}):
+        return {}
+    if not isinstance(value, dict):
+        raise RuntimeError(f"{label} must be an object.")
+    result: Dict[str, str] = {}
+    for raw_key, raw_value in value.items():
+        if not isinstance(raw_key, str) or not raw_key.strip():
+            raise RuntimeError(f"{label} has an empty or non-string key.")
+        if not isinstance(raw_value, str) or not raw_value.strip():
+            raise RuntimeError(f"{label}.{raw_key} must be a non-empty string.")
+        result[raw_key.strip()] = raw_value.strip()
+    return result
+
+
+def normalize_reference_bindings(
+    value: object,
+    references: Sequence[str],
+    scene_number: int,
+) -> Dict[str, Dict[str, object]]:
+    if value in (None, {}):
+        return {}
+    if not isinstance(value, dict):
+        raise RuntimeError(
+            f"Scene {scene_number} qa.reference_bindings must be an object."
+        )
+    result: Dict[str, Dict[str, object]] = {}
+    known = set(references)
+    allowed = {"use_for", "do_not_copy", "notes"}
+    for reference_id, raw_binding in value.items():
+        if reference_id not in known:
+            raise RuntimeError(
+                f"Scene {scene_number} qa.reference_bindings names unused "
+                f"reference ID: {reference_id}"
+            )
+        if not isinstance(raw_binding, dict):
+            raise RuntimeError(
+                f"Scene {scene_number} reference binding {reference_id} must be an object."
+            )
+        unknown = set(raw_binding) - allowed
+        if unknown:
+            raise RuntimeError(
+                f"Scene {scene_number} reference binding {reference_id} has unknown "
+                f"fields: {sorted(unknown)}"
+            )
+        notes = raw_binding.get("notes", "")
+        if not isinstance(notes, str):
+            raise RuntimeError(
+                f"Scene {scene_number} reference binding {reference_id} notes must be a string."
+            )
+        result[reference_id] = {
+            "use_for": normalize_string_list(
+                raw_binding.get("use_for"),
+                f"Scene {scene_number} reference binding {reference_id}.use_for",
+            ),
+            "do_not_copy": normalize_string_list(
+                raw_binding.get("do_not_copy"),
+                f"Scene {scene_number} reference binding {reference_id}.do_not_copy",
+            ),
+            "notes": notes.strip(),
+        }
+    return result
+
+
+def normalize_qa_contract(
+    value: object,
+    scene_number: int,
+    references: Sequence[str],
+) -> Dict[str, Any]:
+    if value in (None, {}):
+        return {}
+    if not isinstance(value, dict):
+        raise RuntimeError(f"Scene {scene_number} qa must be an object.")
+    unknown = set(value) - QA_CONTRACT_KEYS
+    if unknown:
+        raise RuntimeError(
+            f"Scene {scene_number} qa has unknown fields: {sorted(unknown)}"
+        )
+    risk_level = value.get("risk_level", "medium")
+    if risk_level not in {"low", "medium", "high"}:
+        raise RuntimeError(
+            f"Scene {scene_number} qa.risk_level must be low, medium, or high."
+        )
+    required = normalize_string_list(
+        value.get("required_entities"),
+        f"Scene {scene_number} qa.required_entities",
+    )
+    forbidden = normalize_string_list(
+        value.get("forbidden_entities"),
+        f"Scene {scene_number} qa.forbidden_entities",
+    )
+    required_keys = {
+        unicodedata.normalize("NFKC", item).casefold() for item in required
+    }
+    forbidden_keys = {
+        unicodedata.normalize("NFKC", item).casefold() for item in forbidden
+    }
+    overlap = required_keys & forbidden_keys
+    if overlap:
+        raise RuntimeError(
+            f"Scene {scene_number} qa requires and forbids the same entity: "
+            f"{sorted(overlap)}"
+        )
+    raw_counts = value.get("exact_counts") or {}
+    if not isinstance(raw_counts, dict):
+        raise RuntimeError(f"Scene {scene_number} qa.exact_counts must be an object.")
+    exact_counts: Dict[str, int] = {}
+    for raw_key, raw_count in raw_counts.items():
+        if not isinstance(raw_key, str) or not raw_key.strip():
+            raise RuntimeError(
+                f"Scene {scene_number} qa.exact_counts has an invalid entity name."
+            )
+        if isinstance(raw_count, bool) or not isinstance(raw_count, int) or raw_count < 0:
+            raise RuntimeError(
+                f"Scene {scene_number} qa.exact_counts.{raw_key} must be a non-negative integer."
+            )
+        exact_counts[raw_key.strip()] = raw_count
+    raw_props = value.get("props") or {}
+    if not isinstance(raw_props, dict):
+        raise RuntimeError(f"Scene {scene_number} qa.props must be an object.")
+    props: Dict[str, object] = {}
+    for raw_key, raw_spec in raw_props.items():
+        if not isinstance(raw_key, str) or not raw_key.strip():
+            raise RuntimeError(f"Scene {scene_number} qa.props has an invalid key.")
+        if isinstance(raw_spec, bool) or not isinstance(raw_spec, (int, str)):
+            raise RuntimeError(
+                f"Scene {scene_number} qa.props.{raw_key} must be an integer or string."
+            )
+        if isinstance(raw_spec, int) and raw_spec < 0:
+            raise RuntimeError(
+                f"Scene {scene_number} qa.props.{raw_key} must not be negative."
+            )
+        if isinstance(raw_spec, str) and not raw_spec.strip():
+            raise RuntimeError(
+                f"Scene {scene_number} qa.props.{raw_key} must not be empty."
+            )
+        props[raw_key.strip()] = raw_spec.strip() if isinstance(raw_spec, str) else raw_spec
+    contract: Dict[str, Any] = {
+        "risk_level": risk_level,
+        "required_entities": required,
+        "forbidden_entities": forbidden,
+        "exact_counts": exact_counts,
+        "identity_states": normalize_string_map(
+            value.get("identity_states"),
+            f"Scene {scene_number} qa.identity_states",
+        ),
+        "relationships": normalize_string_list(
+            value.get("relationships"),
+            f"Scene {scene_number} qa.relationships",
+        ),
+        "weapons": normalize_string_map(
+            value.get("weapons"),
+            f"Scene {scene_number} qa.weapons",
+        ),
+        "props": props,
+        "height_rules": normalize_string_list(
+            value.get("height_rules"),
+            f"Scene {scene_number} qa.height_rules",
+        ),
+        "custom_checks": normalize_string_list(
+            value.get("custom_checks"),
+            f"Scene {scene_number} qa.custom_checks",
+        ),
+        "reference_bindings": normalize_reference_bindings(
+            value.get("reference_bindings"), references, scene_number
+        ),
+    }
+    return contract
+
+
+def qa_required_check_ids(scene: Scene) -> List[str]:
+    result = list(BUILTIN_QA_CHECKS)
+    for field_name in (
+        "required_entities",
+        "forbidden_entities",
+        "exact_counts",
+        "identity_states",
+        "relationships",
+        "weapons",
+        "props",
+        "height_rules",
+        "custom_checks",
+        "reference_bindings",
+    ):
+        if scene.qa.get(field_name):
+            result.append(field_name)
+    return result
+
+
 def build_prompt(scene: Scene, story_title: str) -> str:
     if scene.prompt.strip():
         return scene.prompt.strip()
@@ -313,6 +549,7 @@ def load_scene_plan(path: Path, story_title: str) -> List[Scene]:
             prompt=str(item.get("prompt") or ""),
             expected_image=str(item.get("expected_image") or ""),
             references=[value.strip() for value in references],
+            qa=dict(item.get("qa") or {}),
         )
         scene.prompt = build_prompt(scene, story_title)
         scenes.append(scene)
@@ -353,6 +590,7 @@ def finalize_scenes(scenes: Sequence[Scene]) -> None:
             seen_references.add(collision_key)
             normalized_references.append(reference_id)
         scene.references = normalized_references
+        scene.qa = normalize_qa_contract(scene.qa, scene.number, scene.references)
         scene.expected_image = expected
         scene.task_id = scene_task_id(scene)
 
@@ -374,6 +612,8 @@ def scene_plan_data(scenes: Sequence[Scene]) -> List[Dict[str, object]]:
         item = {field: getattr(scene, field) for field in fields}
         if scene.references:
             item["references"] = list(scene.references)
+        if scene.qa:
+            item["qa"] = dict(scene.qa)
         result.append(item)
     return result
 
@@ -386,6 +626,19 @@ def scene_plan_sha256(scenes: Sequence[Scene]) -> str:
         separators=(",", ":"),
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def release_contract_payload(
+    quality_gate_required: bool,
+    book_metadata: Dict[str, object],
+) -> Dict[str, object]:
+    return {
+        "quality_gate_required": bool(quality_gate_required),
+        "book_metadata": {
+            "footer_zh": book_metadata.get("footer_zh") or None,
+            "footer_en": book_metadata.get("footer_en") or None,
+        },
+    }
 
 
 def load_manifest(
@@ -417,6 +670,7 @@ def load_manifest(
             prompt=str(item.get("prompt") or ""),
             expected_image=str(item.get("expected_image") or ""),
             references=[value.strip() for value in references],
+            qa=dict(item.get("qa") or {}),
         )
         scenes.append(scene)
     scenes.sort(key=lambda scene: scene.number)
@@ -444,6 +698,17 @@ def load_manifest(
         raise RuntimeError(
             f"Manifest plan hash mismatch: expected {stored_hash}, calculated {calculated_hash}"
         )
+    if manifest_version >= 4:
+        quality_required = raw.get("quality_gate_required")
+        metadata = raw.get("book_metadata")
+        if not isinstance(quality_required, bool) or not isinstance(metadata, dict):
+            raise RuntimeError(
+                "Manifest v4 requires boolean quality_gate_required and book_metadata."
+            )
+        contract = release_contract_payload(quality_required, metadata)
+        stored_release_hash = raw.get("release_contract_sha256")
+        if stored_release_hash != canonical_sha256(contract):
+            raise RuntimeError("Manifest release contract hash mismatch.")
     has_references = any(scene.references for scene in scenes)
     reference_hash = raw.get("reference_manifest_sha256")
     if has_references and manifest_version < 3:
@@ -707,6 +972,152 @@ def canonical_sha256(value: object) -> str:
         separators=(",", ":"),
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def manifest_requires_quality_gate(manifest: Dict[str, Any]) -> bool:
+    return bool(manifest.get("quality_gate_required"))
+
+
+def empty_quality_gate(plan_sha256: str) -> Dict[str, object]:
+    return {
+        "schema_version": 1,
+        "plan_sha256": plan_sha256,
+        "attempts": [],
+    }
+
+
+def quality_gate_sha256(gate: Dict[str, Any]) -> str:
+    return canonical_sha256(
+        {
+            "schema_version": gate.get("schema_version"),
+            "plan_sha256": gate.get("plan_sha256"),
+            "attempts": gate.get("attempts"),
+        }
+    )
+
+
+def load_quality_gate(
+    output_dir: Path,
+    plan_sha256: str,
+    required: bool = False,
+) -> Dict[str, Any]:
+    path = output_dir / QUALITY_GATE_NAME
+    if not path.exists():
+        if required:
+            raise RuntimeError(f"Missing visual quality gate: {path}")
+        return empty_quality_gate(plan_sha256)
+    if path.is_symlink() or not path.is_file():
+        raise RuntimeError(f"Visual quality gate must be a regular file: {path}")
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict) or raw.get("schema_version") != 1:
+        raise RuntimeError(f"Invalid visual quality gate: {path}")
+    if raw.get("plan_sha256") != plan_sha256:
+        raise RuntimeError("Visual quality gate and manifest plan hashes differ.")
+    attempts = raw.get("attempts")
+    if not isinstance(attempts, list) or not all(
+        isinstance(item, dict) for item in attempts
+    ):
+        raise RuntimeError("Visual quality gate attempts must be a list of objects.")
+    if raw.get("quality_gate_sha256") != quality_gate_sha256(raw):
+        raise RuntimeError("Visual quality gate hash mismatch.")
+    return raw
+
+
+def write_quality_gate(output_dir: Path, gate: Dict[str, Any]) -> None:
+    path = output_dir / QUALITY_GATE_NAME
+    if path.is_symlink():
+        raise RuntimeError(f"Visual quality gate must not be a symlink: {path}")
+    payload = dict(gate)
+    payload["quality_gate_sha256"] = quality_gate_sha256(payload)
+    atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2))
+
+
+def latest_task_approval(
+    gate: Dict[str, Any],
+    task_id: str,
+    image_sha256: str,
+) -> Optional[Dict[str, Any]]:
+    for attempt in reversed(gate.get("attempts", [])):
+        if (
+            attempt.get("task_id") == task_id
+            and attempt.get("verdict") == "pass"
+            and attempt.get("candidate_sha256") == image_sha256
+        ):
+            return attempt
+    return None
+
+
+def quality_gate_failures(
+    output_dir: Path,
+    scenes: Sequence[Scene],
+    manifest: Dict[str, Any],
+) -> List[str]:
+    if not manifest_requires_quality_gate(manifest):
+        return []
+    plan_hash = str(manifest.get("plan_sha256") or "")
+    gate = load_quality_gate(output_dir, plan_hash)
+    failures: List[str] = []
+    for scene in scenes:
+        image_path = output_dir / "images" / image_name(scene)
+        valid, reason, details = inspect_png(image_path)
+        if not valid:
+            failures.append(
+                f"scene {scene.number} {image_name(scene)}: final PNG is invalid: {reason}"
+            )
+            continue
+        approval = latest_task_approval(gate, scene.task_id, str(details["sha256"]))
+        if approval is None:
+            failures.append(
+                f"scene {scene.number} {image_name(scene)}: image hash has no passing visual QA report"
+            )
+            continue
+        expected_contract_hash = canonical_sha256(scene.qa)
+        if approval.get("qa_contract_sha256") != expected_contract_hash:
+            failures.append(
+                f"scene {scene.number} {image_name(scene)}: QA contract hash differs"
+            )
+    return failures
+
+
+def require_quality_gate(
+    output_dir: Path,
+    scenes: Sequence[Scene],
+    manifest: Dict[str, Any],
+) -> None:
+    failures = quality_gate_failures(output_dir, scenes, manifest)
+    if failures:
+        raise RuntimeError(
+            "PDF release blocked by visual quality gate:\n- " + "\n- ".join(failures)
+        )
+
+
+def candidate_path(output_dir: Path, task_id: str, digest: str) -> Path:
+    if not re.fullmatch(r"[0-9a-f]{64}", digest):
+        raise RuntimeError(f"Invalid candidate SHA-256: {digest}")
+    return output_dir / CANDIDATE_DIR_NAME / task_id / f"{digest}.png"
+
+
+def latest_generation_cycle_is_terminal(progress_path: Path, task_id: str) -> bool:
+    records = [
+        record
+        for record in read_progress(progress_path, strict=False)
+        if record.get("task_id") == task_id
+        and record.get("event") in PROGRESS_EVENTS
+    ]
+    if not records or records[-1].get("event") != "generation_returned":
+        return False
+    latest_start = max(
+        (
+            index
+            for index, record in enumerate(records)
+            if record.get("event") == "generation_started"
+        ),
+        default=-1,
+    )
+    return latest_start >= 0 and any(
+        record.get("event") == "generation_returned"
+        for record in records[latest_start + 1 :]
+    )
 
 
 def reference_policy() -> Dict[str, object]:
@@ -1453,6 +1864,8 @@ def write_generation_plan(
                 "referenced_image_paths": [item["path"] for item in references],
                 "reference_count": len(references),
                 "reference_payload_bytes": payload_bytes,
+                "qa_contract": dict(scene.qa),
+                "required_qa_checks": qa_required_check_ids(scene),
                 "status": inspection.status,
                 "status_reason": inspection.reason,
                 "image": {
@@ -1472,7 +1885,7 @@ def write_generation_plan(
         if task["status"] != "complete"
     )
     plan: Dict[str, object] = {
-        "schema_version": 2 if reference_snapshot_sha256 else 1,
+        "schema_version": 3,
         "created_at": utc_now(),
         "workflow_mode": workflow_mode,
         "plan_sha256": scene_plan_sha256(scenes),
@@ -1521,7 +1934,7 @@ def load_generation_plan(output_dir: Path) -> Dict[str, Any]:
     schema_value = raw.get("schema_version", 1)
     if isinstance(schema_value, bool) or not isinstance(schema_value, int):
         raise RuntimeError("Generation plan schema_version must be an integer.")
-    if schema_value not in (1, 2):
+    if schema_value not in (1, 2, 3):
         raise RuntimeError(f"Unsupported generation plan schema: {schema_value}")
     concurrency = raw.get("concurrency")
     mapping_mode = raw.get("mapping_mode")
@@ -1576,6 +1989,8 @@ def load_generation_plan(output_dir: Path) -> Dict[str, Any]:
             "reference_payload_bytes": sum(
                 int(item["size_bytes"]) for item in references
             ),
+            "qa_contract": dict(scene.qa),
+            "required_qa_checks": qa_required_check_ids(scene),
         }
     if len(raw["tasks"]) != len(expected_tasks):
         raise RuntimeError("Generation task count does not match the manifest.")
@@ -1630,6 +2045,8 @@ def load_generation_plan(output_dir: Path) -> Dict[str, Any]:
             "referenced_image_paths",
             "reference_count",
             "reference_payload_bytes",
+            "qa_contract",
+            "required_qa_checks",
         ):
             actual = task.get(field_name)
             if (
@@ -1644,6 +2061,11 @@ def load_generation_plan(output_dir: Path) -> Dict[str, Any]:
                 }
                 and field_name not in task
             ):
+                actual = expected[field_name]
+            if schema_version < 3 and field_name in {
+                "qa_contract",
+                "required_qa_checks",
+            } and field_name not in task:
                 actual = expected[field_name]
             if actual != expected[field_name]:
                 raise RuntimeError(
@@ -1906,6 +2328,350 @@ def import_generated_image(
         raise
 
 
+def import_generated_candidate(
+    output_dir: Path,
+    task_id: str,
+    source_path: Path,
+    generated_root: Optional[Path] = None,
+) -> Dict[str, object]:
+    started = time.perf_counter()
+    plan = load_generation_plan(output_dir)
+    task = find_generation_task(plan, task_id)
+    if not latest_generation_cycle_is_terminal(
+        output_dir / PROGRESS_LOG_NAME, task_id
+    ):
+        raise RuntimeError(
+            f"Task {task_id} has no completed generation_started/"
+            "generation_returned cycle; refusing an unaudited candidate import."
+        )
+    manifest, scenes = load_manifest(output_dir / "manifest.json")
+    if not manifest_requires_quality_gate(manifest):
+        raise RuntimeError(
+            "This manifest does not require candidate QA. Use --import-image for "
+            "the legacy workflow or create a new quality-gated output."
+        )
+    scene = next(scene for scene in scenes if scene.task_id == task_id)
+    final_target = output_dir / "images" / str(task["expected_image"])
+    final_valid, _final_reason, _final_details = inspect_png(final_target)
+    if final_valid:
+        raise RuntimeError(
+            f"Task {task_id} already has a final project PNG; do not generate another candidate."
+        )
+
+    root = (generated_root or generation_root()).resolve()
+    source_input = source_path.expanduser()
+    if not source_input.is_absolute():
+        source_input = (Path.cwd() / source_input).absolute()
+    if source_input.is_symlink():
+        raise RuntimeError(f"Generated candidate PNG must not be a symlink: {source_input}")
+    source = source_input.resolve()
+    if not path_is_within(source, root):
+        raise RuntimeError(
+            f"Candidate source PNG is outside the Codex generated-images directory: {source}"
+        )
+    source_valid, source_reason, source_details = inspect_png(source_input)
+    if not source_valid:
+        raise RuntimeError(f"Invalid generated candidate PNG: {source_reason}")
+    digest = str(source_details["sha256"])
+    target = candidate_path(output_dir.resolve(), task_id, digest)
+    if target.is_symlink():
+        raise RuntimeError(f"Candidate target must not be a symlink: {target}")
+    if target.exists():
+        valid, reason, details = inspect_png(target)
+        if not valid or details.get("sha256") != digest:
+            raise RuntimeError(f"Existing candidate is invalid: {reason}")
+        duplicate = True
+    else:
+        atomic_copy_file(source, target)
+        valid, reason, details = inspect_png(target)
+        if not valid or details.get("sha256") != digest:
+            raise RuntimeError(f"Imported candidate failed validation: {reason}")
+        duplicate = False
+
+    template = {
+        "schema_version": 1,
+        "task_id": task_id,
+        "candidate_sha256": digest,
+        "verdict": "needs_review",
+        "reviewer": "codex-vision",
+        "checks": [
+            {"id": check_id, "result": "pending", "detail": ""}
+            for check_id in qa_required_check_ids(scene)
+        ],
+        "failure_codes": [],
+        "detail": "",
+    }
+    template_path = target.with_suffix(".qa-template.json")
+    if not template_path.exists():
+        atomic_write_text(
+            template_path,
+            json.dumps(template, ensure_ascii=False, indent=2),
+        )
+    append_progress(
+        output_dir / PROGRESS_LOG_NAME,
+        "candidate_imported",
+        task_id=task_id,
+        scene_number=task.get("scene_number"),
+        candidate=str(target),
+        candidate_sha256=digest,
+        duplicate=duplicate,
+        qa_template=str(template_path),
+        elapsed_ms=round((time.perf_counter() - started) * 1000),
+    )
+    return {
+        "status": "duplicate" if duplicate else "candidate",
+        "task_id": task_id,
+        "scene_number": task.get("scene_number"),
+        "candidate": str(target),
+        "candidate_sha256": digest,
+        "qa_template": str(template_path),
+        "required_checks": qa_required_check_ids(scene),
+    }
+
+
+def validate_candidate_qa_report(
+    report_path: Path,
+    task_id: str,
+    candidate_sha256: str,
+    scene: Scene,
+) -> Dict[str, Any]:
+    if report_path.is_symlink() or not report_path.is_file():
+        raise RuntimeError(f"QA report must be a regular file: {report_path}")
+    raw = json.loads(report_path.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict) or raw.get("schema_version") != 1:
+        raise RuntimeError("QA report must be an object with schema_version 1.")
+    allowed = {
+        "schema_version",
+        "task_id",
+        "candidate_sha256",
+        "verdict",
+        "reviewer",
+        "checks",
+        "failure_codes",
+        "detail",
+    }
+    unknown = set(raw) - allowed
+    if unknown:
+        raise RuntimeError(f"QA report has unknown fields: {sorted(unknown)}")
+    if raw.get("task_id") != task_id:
+        raise RuntimeError("QA report task_id differs from the requested task.")
+    if raw.get("candidate_sha256") != candidate_sha256:
+        raise RuntimeError("QA report candidate hash differs from the candidate PNG.")
+    verdict = raw.get("verdict")
+    if verdict not in QA_VERDICTS:
+        raise RuntimeError(f"Unsupported QA verdict: {verdict}")
+    reviewer = raw.get("reviewer")
+    if not isinstance(reviewer, str) or not reviewer.strip():
+        raise RuntimeError("QA report reviewer must be a non-empty string.")
+    checks = raw.get("checks")
+    if not isinstance(checks, list) or not all(isinstance(item, dict) for item in checks):
+        raise RuntimeError("QA report checks must be a list of objects.")
+    checked: Dict[str, Dict[str, str]] = {}
+    for index, item in enumerate(checks, start=1):
+        check_id = item.get("id")
+        result = item.get("result")
+        detail = item.get("detail", "")
+        if not isinstance(check_id, str) or not check_id.strip():
+            raise RuntimeError(f"QA check {index} has no valid id.")
+        if check_id in checked:
+            raise RuntimeError(f"QA report repeats check id: {check_id}")
+        if result not in QA_CHECK_RESULTS:
+            raise RuntimeError(f"QA check {check_id} has invalid result: {result}")
+        if not isinstance(detail, str):
+            raise RuntimeError(f"QA check {check_id} detail must be a string.")
+        checked[check_id] = {
+            "id": check_id,
+            "result": result,
+            "detail": detail.strip(),
+        }
+    required = qa_required_check_ids(scene)
+    missing = [check_id for check_id in required if check_id not in checked]
+    if missing:
+        raise RuntimeError(f"QA report is missing required checks: {missing}")
+    failed = [check_id for check_id in required if checked[check_id]["result"] == "fail"]
+    incomplete = [
+        check_id
+        for check_id in required
+        if checked[check_id]["result"] != "pass"
+    ]
+    if verdict == "pass" and incomplete:
+        raise RuntimeError(
+            f"Passing QA report has non-passing required checks: {incomplete}"
+        )
+    if verdict == "fail" and not failed:
+        raise RuntimeError("Failing QA report must contain at least one failed check.")
+    failure_codes = normalize_string_list(
+        raw.get("failure_codes"), "QA report failure_codes"
+    )
+    detail = raw.get("detail", "")
+    if not isinstance(detail, str):
+        raise RuntimeError("QA report detail must be a string.")
+    return {
+        "schema_version": 1,
+        "task_id": task_id,
+        "candidate_sha256": candidate_sha256,
+        "verdict": verdict,
+        "reviewer": reviewer.strip(),
+        "checks": [checked[check_id] for check_id in checked],
+        "failure_codes": failure_codes,
+        "detail": detail.strip(),
+    }
+
+
+def retry_prompt_from_report(base_prompt: str, report: Dict[str, Any]) -> str:
+    failed_checks = [
+        item
+        for item in report.get("checks", [])
+        if item.get("result") == "fail"
+    ]
+    lines = [
+        base_prompt.rstrip(),
+        "",
+        "Correct the previous rejected attempt. These visual QA failures are the highest priority:",
+    ]
+    for item in failed_checks:
+        detail = str(item.get("detail") or "failed the required visual check")
+        lines.append(f"- {item.get('id')}: {detail}")
+    if report.get("detail"):
+        lines.append(f"- reviewer summary: {report['detail']}")
+    lines.append(
+        "All original story, identity, continuity, reference, count, weapon, height, and no-text constraints remain mandatory."
+    )
+    return "\n".join(lines)
+
+
+def archive_local_candidate(output_dir: Path, candidate: Path, digest: str) -> Path:
+    rejected_dir = output_dir / "rejected_attempts"
+    if rejected_dir.is_symlink():
+        raise RuntimeError(f"Rejected-attempt directory must not be a symlink: {rejected_dir}")
+    rejected_dir.mkdir(parents=True, exist_ok=True)
+    target = rejected_dir / f"{digest}.png"
+    if target.exists():
+        valid, reason, details = inspect_png(target)
+        if not valid or details.get("sha256") != digest:
+            raise RuntimeError(f"Existing rejected candidate is invalid: {reason}")
+        return target
+    atomic_copy_file(candidate, target)
+    valid, reason, details = inspect_png(target)
+    if not valid or details.get("sha256") != digest:
+        raise RuntimeError(f"Archived rejected candidate is invalid: {reason}")
+    return target
+
+
+def record_candidate_qa(
+    output_dir: Path,
+    task_id: str,
+    candidate_sha256: str,
+    report_path: Path,
+) -> Dict[str, object]:
+    plan = load_generation_plan(output_dir)
+    task = find_generation_task(plan, task_id)
+    manifest, scenes = load_manifest(output_dir / "manifest.json")
+    if not manifest_requires_quality_gate(manifest):
+        raise RuntimeError("This manifest does not use the visual quality gate.")
+    scene = next(scene for scene in scenes if scene.task_id == task_id)
+    candidate = candidate_path(output_dir.resolve(), task_id, candidate_sha256)
+    valid, reason, details = inspect_png(candidate)
+    if not valid or details.get("sha256") != candidate_sha256:
+        raise RuntimeError(f"Candidate PNG failed validation: {reason}")
+    report = validate_candidate_qa_report(
+        report_path.expanduser().resolve(), task_id, candidate_sha256, scene
+    )
+    report_digest = canonical_sha256(report)
+    stored_report = (
+        output_dir
+        / QA_REPORT_DIR_NAME
+        / task_id
+        / f"{candidate_sha256}-{report_digest}.json"
+    )
+    atomic_write_text(stored_report, json.dumps(report, ensure_ascii=False, indent=2))
+    gate = load_quality_gate(
+        output_dir,
+        str(manifest.get("plan_sha256") or ""),
+    )
+    attempt = {
+        **report,
+        "scene_number": scene.number,
+        "expected_image": image_name(scene),
+        "qa_contract_sha256": canonical_sha256(scene.qa),
+        "report_path": str(stored_report),
+        "report_sha256": sha256_file(stored_report),
+        "reviewed_at": utc_now(),
+    }
+    gate["attempts"].append(attempt)
+
+    promoted_path: Optional[Path] = None
+    archived_path: Optional[Path] = None
+    if report["verdict"] == "pass":
+        final_target = output_dir / "images" / str(task["expected_image"])
+        final_valid, _final_reason, final_details = inspect_png(final_target)
+        if final_valid and final_details.get("sha256") != candidate_sha256:
+            raise RuntimeError(
+                f"Final target already contains different approved bytes: {final_target}"
+            )
+        if not final_valid:
+            atomic_copy_file(candidate, final_target)
+        promoted_valid, promoted_reason, promoted_details = inspect_png(final_target)
+        if not promoted_valid or promoted_details.get("sha256") != candidate_sha256:
+            raise RuntimeError(f"Promoted final image failed validation: {promoted_reason}")
+        promoted_path = final_target
+    elif report["verdict"] == "fail":
+        archived_path = archive_local_candidate(output_dir, candidate, candidate_sha256)
+
+    write_quality_gate(output_dir, gate)
+    if promoted_path is not None:
+        refresh_generation_plan_status(output_dir)
+        append_progress(
+            output_dir / PROGRESS_LOG_NAME,
+            "candidate_promoted",
+            task_id=task_id,
+            scene_number=scene.number,
+            candidate_sha256=candidate_sha256,
+            final_image=str(promoted_path),
+            reviewer=report["reviewer"],
+        )
+    else:
+        append_progress(
+            output_dir / PROGRESS_LOG_NAME,
+            "candidate_qa_recorded",
+            task_id=task_id,
+            scene_number=scene.number,
+            candidate_sha256=candidate_sha256,
+            verdict=report["verdict"],
+            reviewer=report["reviewer"],
+            failure_codes=report["failure_codes"],
+            archived=str(archived_path) if archived_path else None,
+        )
+
+    previous_failures = [
+        item
+        for item in gate["attempts"]
+        if item.get("task_id") == task_id and item.get("verdict") == "fail"
+    ]
+    repeated_failure = False
+    current_codes = set(report.get("failure_codes", []))
+    if report["verdict"] == "fail" and current_codes:
+        repeated_failure = sum(
+            bool(current_codes & set(item.get("failure_codes", [])))
+            for item in previous_failures
+        ) >= 2
+    result: Dict[str, object] = {
+        "status": "approved" if promoted_path else str(report["verdict"]),
+        "task_id": task_id,
+        "scene_number": scene.number,
+        "candidate_sha256": candidate_sha256,
+        "qa_report": str(stored_report),
+        "final_image": str(promoted_path) if promoted_path else None,
+        "archived": str(archived_path) if archived_path else None,
+        "strategy_change_required": repeated_failure,
+    }
+    if report["verdict"] == "fail":
+        result["retry_prompt"] = retry_prompt_from_report(
+            str(task["prompt"]), report
+        )
+    return result
+
+
 def archive_rejected_attempt(
     output_dir: Path,
     task_id: str,
@@ -1995,7 +2761,45 @@ def fit_size(source: Tuple[int, int], box: Tuple[int, int]) -> Tuple[int, int]:
     return max(1, int(source[0] * scale)), max(1, int(source[1] * scale))
 
 
-def make_pdf(scenes: Sequence[Scene], output_pdf: Path, language: str, footer: str) -> None:
+def validate_final_footer(value: str, language: str) -> str:
+    normalized = normalize(value)
+    if not normalized:
+        raise RuntimeError(
+            f"Final {language} footer is missing. Set it during planning or pass an explicit footer."
+        )
+    if normalized.casefold() in {item.casefold() for item in GENERIC_FINAL_FOOTERS}:
+        raise RuntimeError(
+            f"Generic final footer {normalized!r} is not allowed; use the series and chapter title."
+        )
+    return normalized
+
+
+def resolve_pdf_footers(
+    manifest: Dict[str, Any],
+    footer_zh: Optional[str],
+    footer_en: Optional[str],
+    allow_preview_defaults: bool = False,
+) -> Tuple[str, str]:
+    metadata = manifest.get("book_metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+    resolved_zh = footer_zh or str(metadata.get("footer_zh") or "")
+    resolved_en = footer_en or str(metadata.get("footer_en") or "")
+    if allow_preview_defaults:
+        return resolved_zh or "绘本预览", resolved_en or "Storybook Preview"
+    return (
+        validate_final_footer(resolved_zh, "Chinese"),
+        validate_final_footer(resolved_en, "English"),
+    )
+
+
+def make_pdf(
+    scenes: Sequence[Scene],
+    output_pdf: Path,
+    language: str,
+    footer: str,
+    preview_dir: Optional[Path] = None,
+) -> None:
     from PIL import Image, ImageDraw
 
     output_pdf.parent.mkdir(parents=True, exist_ok=True)
@@ -2035,8 +2839,31 @@ def make_pdf(scenes: Sequence[Scene], output_pdf: Path, language: str, footer: s
         draw_lines(draw, wrap_text(draw, narration, caption_font, page_w - margin * 2, 2), (margin, caption_top + 56), caption_font, (75, 58, 42), 12)
         draw.text((margin, page_h - 44), footer, font=footer_font, fill=(118, 97, 75))
         page_num = f"{index}/{len(scenes)}"
+        if (
+            margin + text_width(draw, footer, footer_font) + 40
+            >= page_w - margin - text_width(draw, page_num, footer_font)
+        ):
+            raise RuntimeError(
+                f"Footer overlaps page number in {language} PDF: {footer!r}"
+            )
         draw.text((page_w - margin - text_width(draw, page_num, footer_font), page_h - 44), page_num, font=footer_font, fill=(118, 97, 75))
         rendered.append(canvas)
+
+    if preview_dir is not None:
+        if preview_dir.is_symlink():
+            raise RuntimeError(f"PDF preview directory must not be a symlink: {preview_dir}")
+        preview_dir.mkdir(parents=True, exist_ok=True)
+        for index, page in enumerate(rendered, start=1):
+            preview_path = preview_dir / f"page_{index:02d}.png"
+            temporary_preview = preview_path.with_name(
+                f".{preview_path.name}.{uuid.uuid4().hex}.tmp"
+            )
+            try:
+                page.save(temporary_preview, "PNG")
+                os.replace(temporary_preview, preview_path)
+            finally:
+                if temporary_preview.exists():
+                    temporary_preview.unlink()
 
     temporary = output_pdf.with_name(f".{output_pdf.name}.{uuid.uuid4().hex}.tmp")
     try:
@@ -2150,7 +2977,14 @@ def build_pdfs(
             run_id=run_id,
             language=current_language,
         )
-        make_pdf(scenes, pdf_path, current_language, footer)
+        preview_dir = output_dir / "preview" / "final" / current_language
+        make_pdf(
+            scenes,
+            pdf_path,
+            current_language,
+            footer,
+            preview_dir=preview_dir,
+        )
         append_progress(
             progress_path,
             "pdf_written",
@@ -2161,18 +2995,40 @@ def build_pdfs(
             elapsed_ms=round((time.perf_counter() - pdf_started) * 1000),
         )
         outputs.append(str(pdf_path))
+    atomic_write_text(
+        output_dir / "pdf_validation.json",
+        json.dumps(
+            {
+                "schema_version": 1,
+                "generated_at": utc_now(),
+                "page_count": len(scenes),
+                "footers": {"zh": footer_zh, "en": footer_en},
+                "outputs": [
+                    {
+                        "path": path,
+                        "sha256": sha256_file(Path(path)),
+                        "size_bytes": Path(path).stat().st_size,
+                    }
+                    for path in outputs
+                ],
+                "preview_root": str(output_dir / "preview" / "final"),
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+    )
     return outputs
 
 
 def rebuild_pdfs_only(
     output_dir: Path,
     language: str,
-    footer_zh: str,
-    footer_en: str,
+    footer_zh: Optional[str],
+    footer_en: Optional[str],
     captions_plan: Optional[Path] = None,
 ) -> Dict[str, object]:
     manifest_path = output_dir / "manifest.json"
-    _manifest, scenes = load_manifest(manifest_path)
+    manifest, scenes = load_manifest(manifest_path)
     inspections = inspect_scene_images(scenes, output_dir / "images")
     pending = [item for item in inspections if item.status != "complete"]
     if pending:
@@ -2181,6 +3037,10 @@ def rebuild_pdfs_only(
             for item in pending
         )
         raise RuntimeError(f"Cannot rebuild PDF with missing or invalid images:\n{details}")
+    require_quality_gate(output_dir, scenes, manifest)
+    resolved_footer_zh, resolved_footer_en = resolve_pdf_footers(
+        manifest, footer_zh, footer_en
+    )
     overrides: Dict[int, Dict[str, str]] = {}
     caption_hash = ""
     if captions_plan is not None:
@@ -2209,8 +3069,8 @@ def rebuild_pdfs_only(
             render_scenes,
             output_dir,
             language,
-            footer_zh,
-            footer_en,
+            resolved_footer_zh,
+            resolved_footer_en,
             progress_path,
             run_id,
         )
@@ -2246,6 +3106,9 @@ def write_outputs(
     scene_count_info: Dict[str, object],
     workflow_mode: str,
     reference_snapshot_sha256: str = "",
+    footer_zh: str = "",
+    footer_en: str = "",
+    quality_gate_required: bool = False,
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     lines = ["# Parsed Scenes", ""]
@@ -2294,10 +3157,20 @@ def write_outputs(
         ])
     atomic_write_text(output_dir / "scenes.parsed.md", "\n".join(lines))
     atomic_write_text(output_dir / "prompts.generated.md", "\n".join(prompt_lines))
+    book_metadata = {
+        "footer_zh": footer_zh or None,
+        "footer_en": footer_en or None,
+    }
+    release_contract = release_contract_payload(
+        bool(quality_gate_required), book_metadata
+    )
     manifest = {
-        "manifest_version": 3,
+        "manifest_version": 4,
         "story_title": story_title,
         "workflow_mode": workflow_mode,
+        "book_metadata": book_metadata,
+        "quality_gate_required": bool(quality_gate_required),
+        "release_contract_sha256": canonical_sha256(release_contract),
         "plan_sha256": scene_plan_sha256(scenes),
         "reference_manifest_sha256": reference_snapshot_sha256 or None,
         "image_generation_policy": image_policy,
@@ -2359,7 +3232,16 @@ def main() -> None:
         "--reference-spec",
         type=Path,
         default=None,
-        help="Project-local JSON catalog additions for hash-locked reference assets.",
+        help="Reference-root-local JSON catalog additions for hash-locked reference assets.",
+    )
+    parser.add_argument(
+        "--reference-root",
+        type=Path,
+        default=None,
+        help=(
+            "Optional series root for one shared reference catalog. It must contain "
+            "the story project and the output directory."
+        ),
     )
     parser.add_argument("--scene-count", default="auto", help="auto, or a positive integer such as 12, 16, 20, 24")
     parser.add_argument("--draft", action="store_true", help="Create a 6- or 8-page draft storyboard.")
@@ -2370,8 +3252,8 @@ def main() -> None:
         help="Explicitly freeze a pre-v2 manifest that has no plan_sha256.",
     )
     parser.add_argument("--story-title", default="Storybook")
-    parser.add_argument("--footer-zh", default="绘本")
-    parser.add_argument("--footer-en", default="Storybook")
+    parser.add_argument("--footer-zh", default=None)
+    parser.add_argument("--footer-en", default=None)
     parser.add_argument("--language", choices=["zh", "en", "both"], default="both")
     parser.add_argument("--size", default="1536x1024")
     parser.add_argument("--concurrency", type=int, default=1)
@@ -2396,6 +3278,24 @@ def main() -> None:
     parser.add_argument("--detail", default="")
     parser.add_argument("--import-image", type=Path, default=None)
     parser.add_argument(
+        "--import-candidate",
+        type=Path,
+        default=None,
+        help="Import a generated PNG into project-local candidate staging for visual QA.",
+    )
+    parser.add_argument(
+        "--qa-report",
+        type=Path,
+        default=None,
+        help="Record a structured visual QA report and promote only a passing candidate.",
+    )
+    parser.add_argument("--candidate-sha256", default="")
+    parser.add_argument(
+        "--quality-status",
+        action="store_true",
+        help="Report whether every final image has a matching passing visual QA record.",
+    )
+    parser.add_argument(
         "--archive-rejected",
         type=Path,
         default=None,
@@ -2407,13 +3307,16 @@ def main() -> None:
     command_actions = (
         int(args.progress_event is not None)
         + int(args.import_image is not None)
+        + int(args.import_candidate is not None)
+        + int(args.qa_report is not None)
+        + int(args.quality_status)
         + int(args.archive_rejected is not None)
         + int(args.pdf_only)
     )
     if command_actions > 1:
         raise RuntimeError(
-            "Use only one of --progress-event, --import-image, "
-            "--archive-rejected, or --pdf-only at a time."
+            "Use only one command action at a time: progress, import, candidate "
+            "QA, quality status, rejected archive, or PDF-only."
         )
     if args.captions_plan is not None and not args.pdf_only:
         raise RuntimeError("--captions-plan is valid only with --pdf-only.")
@@ -2424,6 +3327,7 @@ def main() -> None:
             or args.draft
             or args.scene_plan is not None
             or args.reference_spec is not None
+            or args.reference_root is not None
             or args.dry_run
             or args.use_existing_images
             or args.force
@@ -2447,7 +3351,27 @@ def main() -> None:
         )
         print(json.dumps(result, ensure_ascii=False))
         return
-    if args.progress_event is not None or args.import_image is not None or args.archive_rejected is not None:
+    if args.quality_status:
+        manifest, scenes = load_manifest(output_dir / "manifest.json")
+        failures = quality_gate_failures(output_dir, scenes, manifest)
+        print(
+            json.dumps(
+                {
+                    "status": "pass" if not failures else "blocked",
+                    "quality_gate_required": manifest_requires_quality_gate(manifest),
+                    "failures": failures,
+                },
+                ensure_ascii=False,
+            )
+        )
+        return
+    if (
+        args.progress_event is not None
+        or args.import_image is not None
+        or args.import_candidate is not None
+        or args.qa_report is not None
+        or args.archive_rejected is not None
+    ):
         if not args.task_id:
             raise RuntimeError(
                 "--task-id is required for progress, import, and rejected-archive commands."
@@ -2456,8 +3380,31 @@ def main() -> None:
             record_generation_event(output_dir, args.progress_event, args.task_id, args.detail)
             print(json.dumps({"event": args.progress_event, "task_id": args.task_id}))
         elif args.import_image is not None:
+            manifest, _scenes = load_manifest(output_dir / "manifest.json")
+            if manifest_requires_quality_gate(manifest):
+                raise RuntimeError(
+                    "Quality-gated manifests must use --import-candidate and "
+                    "--qa-report; direct final image import is disabled."
+                )
             inspection = import_generated_image(output_dir, args.task_id, args.import_image)
             print(json.dumps(asdict(inspection), ensure_ascii=False))
+        elif args.import_candidate is not None:
+            result = import_generated_candidate(
+                output_dir, args.task_id, args.import_candidate
+            )
+            print(json.dumps(result, ensure_ascii=False))
+        elif args.qa_report is not None:
+            if not args.candidate_sha256:
+                raise RuntimeError(
+                    "--candidate-sha256 is required with --qa-report."
+                )
+            result = record_candidate_qa(
+                output_dir,
+                args.task_id,
+                args.candidate_sha256,
+                args.qa_report,
+            )
+            print(json.dumps(result, ensure_ascii=False))
         else:
             archived = archive_rejected_attempt(
                 output_dir,
@@ -2474,9 +3421,9 @@ def main() -> None:
 
     manifest_path = output_dir / "manifest.json"
     use_manifest = args.resume or (args.use_existing_images and manifest_path.is_file())
-    if use_manifest and args.reference_spec is not None:
+    if use_manifest and (args.reference_spec is not None or args.reference_root is not None):
         raise RuntimeError(
-            "--reference-spec cannot modify a frozen manifest. "
+            "--reference-spec/--reference-root cannot modify a frozen manifest. "
             "Use the existing reference snapshot or start a new output directory."
         )
     if args.resume and not manifest_path.is_file():
@@ -2507,6 +3454,7 @@ def main() -> None:
         concurrency=args.concurrency,
         mapping_mode=args.mapping_mode,
         reference_spec=str(args.reference_spec) if args.reference_spec else None,
+        reference_root=str(args.reference_root) if args.reference_root else None,
     )
 
     try:
@@ -2535,6 +3483,14 @@ def main() -> None:
             )
             story_title = str(manifest.get("story_title") or args.story_title)
             workflow_mode = str(manifest.get("workflow_mode") or "final")
+            metadata = manifest.get("book_metadata")
+            if not isinstance(metadata, dict):
+                metadata = {}
+            stored_footer_zh = str(metadata.get("footer_zh") or "")
+            stored_footer_en = str(metadata.get("footer_en") or "")
+            footer_zh = args.footer_zh or stored_footer_zh
+            footer_en = args.footer_en or stored_footer_en
+            quality_gate_required = manifest_requires_quality_gate(manifest)
             if args.draft and workflow_mode != "draft":
                 raise RuntimeError("The existing manifest is not a draft plan.")
             scene_count_info = dict(
@@ -2576,6 +3532,9 @@ def main() -> None:
             markdown_file_names = list(markdown.keys())
             story_title = args.story_title
             workflow_mode = "draft" if args.draft else "final"
+            footer_zh = args.footer_zh or ""
+            footer_en = args.footer_en or ""
+            quality_gate_required = workflow_mode == "final" and not args.dry_run
             append_progress(
                 progress_path,
                 "sources_loaded",
@@ -2604,8 +3563,25 @@ def main() -> None:
             for scene in scenes:
                 scene.prompt = build_prompt(scene, story_title)
             finalize_scenes(scenes)
+            if quality_gate_required and args.scene_plan and any(
+                not scene.qa for scene in scenes
+            ):
+                missing_qa = [scene.number for scene in scenes if not scene.qa]
+                raise RuntimeError(
+                    "Final scene plans must define a structured qa contract for every "
+                    f"scene. Missing scenes: {missing_qa}"
+                )
+            reference_root = (
+                validate_project_dir(args.reference_root)
+                if args.reference_root is not None
+                else project_dir
+            )
+            if not path_is_within(project_dir, reference_root):
+                raise RuntimeError(
+                    "--reference-root must be the story project or one of its parent directories."
+                )
             reference_catalog = prepare_project_references(
-                project_dir,
+                reference_root,
                 args.reference_spec,
             )
             validate_scene_references(scenes, reference_catalog)
@@ -2619,11 +3595,11 @@ def main() -> None:
                 reference_snapshot_sha256,
             ) = write_reference_snapshot(
                 output_dir,
-                project_dir,
+                reference_root,
                 scenes,
                 reference_catalog,
             )
-            reference_project_dir = project_dir
+            reference_project_dir = reference_root
 
         image_dir = output_dir / "images"
         inspections = assign_images(
@@ -2642,6 +3618,9 @@ def main() -> None:
             scene_count_info,
             workflow_mode,
             reference_snapshot_sha256,
+            footer_zh,
+            footer_en,
+            quality_gate_required,
         )
         if use_manifest and legacy_manifest_loaded:
             append_progress(
@@ -2738,12 +3717,21 @@ def main() -> None:
                 "GOOGLE_API_KEY, baoyu-image-gen, OpenAI Images API, or provider fallbacks."
             )
 
+        current_manifest, _current_scenes = load_manifest(output_dir / "manifest.json")
+        if not args.dry_run:
+            require_quality_gate(output_dir, scenes, current_manifest)
+        resolved_footer_zh, resolved_footer_en = resolve_pdf_footers(
+            current_manifest,
+            footer_zh,
+            footer_en,
+            allow_preview_defaults=args.dry_run,
+        )
         pdf_outputs = build_pdfs(
             scenes,
             output_dir,
             args.language,
-            args.footer_zh,
-            args.footer_en,
+            resolved_footer_zh,
+            resolved_footer_en,
             progress_path,
             run_id,
         )

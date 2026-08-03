@@ -1,6 +1,6 @@
 ---
 name: mufeng-bilingual-storybook
-description: Create bilingual AI picture books from Markdown source material. Use when Codex is asked to read story markdown, split it into scenes, write child-friendly Chinese and English narration, create image prompts, generate page illustrations with Codex built-in image_gen only, never via OpenAI Images API, Google/Gemini APIs, GOOGLE_API_KEY, or baoyu-image-gen, and assemble Chinese/English PDF storybooks from generated images.
+description: Create bilingual AI picture books from Markdown source material. Use when Codex is asked to read story markdown, split it into scenes, write child-friendly Chinese and English narration, generate page illustrations with Codex built-in image_gen only, visually review candidates against project references and structured QA rules, retry failed artwork, and assemble Chinese/English PDFs only after the quality gate passes; never use OpenAI Images API, Google/Gemini APIs, GOOGLE_API_KEY, or baoyu-image-gen.
 ---
 
 # Mufeng Bilingual Storybook
@@ -40,15 +40,27 @@ Treat these files as the generation contract:
   filesystem status, and concurrency mapping mode
 - `reference_manifest.json`: the hash-locked reference subset used by this
   output, when scenes use references
+- `quality_gate.json`: append-only candidate QA decisions bound to task,
+  candidate hash, scene QA-contract hash, and reviewer
 - `progress.jsonl`: append-only timing and failure events
+- `candidates/<task-id>/<sha256>.png`: project-local, unapproved artwork
+- `qa_reports/<task-id>/<sha256>.json`: frozen structured visual reviews
+- `pdf_validation.json`: final PDF hashes, page count, footers, and preview root
 
-Use Codex built-in `image_gen` directly, one call per task. Record
+Use Codex built-in `image_gen` directly, one call per attempt. Record
 `generation_started` immediately before the call and `generation_returned` or
-`generation_failed` immediately after it. Import the call-scoped persisted PNG
-with the helper's `--import-image ... --task-id ...` command. That command
-validates the source, copies it through project-local staging, checks hashes,
-atomically commits the exact manifest filename, refreshes task status under a
-file lock, and logs the result.
+`generation_failed` immediately after it. For a new quality-gated final
+manifest, import the call-scoped persisted PNG with `--import-candidate`, never
+`--import-image`. The candidate command requires a complete start/return event
+pair, validates provenance and PNG bytes, and copies the attempt into the
+project-local candidate area. It does not make the image PDF-eligible.
+
+Open each candidate at original detail with the image-viewing tool, compare it
+against that task's exact reference images, and fill the emitted QA template.
+Record the report with `--qa-report ... --candidate-sha256 ...`. Only a report
+whose verdict is `pass` and whose every required check is `pass` atomically
+promotes the candidate to the exact final `images/` filename. A failed report
+archives the bytes and returns a reason-targeted retry prompt.
 
 Always resume from the existing manifest with `--resume`; never re-infer scenes
 from possibly changed Markdown. A non-symlink, decodable, non-placeholder PNG
@@ -72,8 +84,10 @@ screenshots, placeholders, SVG substitutes, or use any external/API fallback.
 
 ## Reference Traffic Control
 
-Store each adopted reference inside the story project. The helper maintains one
-shared project library at `.mufeng-storybook/references/`:
+Store each adopted reference inside the story or series project. For a series,
+pass its root with `--reference-root` so every chapter uses one shared ID/hash
+catalog instead of silently creating chapter-local identities. The helper
+maintains the library at `<reference-root>/.mufeng-storybook/references/`:
 
 - `master/`: byte-for-byte original copies protected by a SHA-256 contract
 - `upload/`: metadata-stripped RGB JPEG proxies, longest edge at most 1024px,
@@ -116,16 +130,23 @@ context, downloads, cloud sync, and other Codex sessions. Do not promise a
    - `generation_tasks.json`
    - `reference_manifest.json` when references are used
    - `progress.jsonl`
-5. Review draft scenes before starting a separate final output directory.
-6. Generate one full-page illustration per pending task with built-in
-   `image_gen`, using only its frozen 0–3 upload proxies; import and validate it
-   immediately.
-7. Resume after interruption with `--resume --prompts-only`. Generate only the
+5. For every final scene, freeze a structured `qa` contract covering required
+   and forbidden entities, exact counts, identity states, relationships,
+   weapons, props, height rules, and reference bindings as applicable.
+6. Generate one full-page candidate per pending task with built-in `image_gen`,
+   using only its frozen 0–3 upload proxies; import it with
+   `--import-candidate` immediately.
+7. Review each candidate with the built-in vision capability at original
+   detail. Record a structured QA report. Promote only passing candidates;
+   automatically retry failures up to three attempts.
+8. Resume after interruption with `--resume --prompts-only`. Generate only the
    tasks still marked pending by fresh filesystem validation.
-8. Build both PDFs from the same verified images:
+9. Build both PDFs only after `--quality-status` reports `pass`, using explicit
+   non-generic Chinese and English footers:
    - Chinese: `storybook.pdf`
    - English: `storybook_en.pdf`
-9. Verify page count, image count, progress timings, and sample rendered pages.
+10. Verify page count, image count, progress timings, `pdf_validation.json`,
+    and every rendered Chinese/English preview page.
 
 Do not use a custom output directory as source material. The helper prunes the
 resolved output path even when its name is not `build`.
@@ -193,6 +214,8 @@ python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook
   --project-dir /absolute/path/to/story-project \
   --output-dir /absolute/path/to/story-project/build/storybook_auto \
   --scene-count auto \
+  --footer-zh '系列名 · 第N章 · 中英双语绘本' \
+  --footer-en 'Series Name · Chapter N · Bilingual Storybook' \
   --prompts-only
 ```
 
@@ -213,7 +236,8 @@ need them, then add both flags to the initial planning command:
 
 ```bash
 --scene-plan /absolute/path/to/story-project/scenes.json \
---reference-spec /absolute/path/to/story-project/references.json
+--reference-spec /absolute/path/to/series/references.json \
+--reference-root /absolute/path/to/series
 ```
 
 Do not pass `--reference-spec` on resume; the output's frozen reference snapshot
@@ -235,14 +259,35 @@ python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook
   --task-id scene-01-<hash>
 ```
 
-Import the exact PNG persisted by that call:
+Import the exact PNG persisted by that call as an unapproved candidate:
 
 ```bash
 python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/story-project/build/storybook_auto \
-  --import-image "$HOME/.codex/generated_images/<session>/<generated>.png" \
+  --import-candidate "$HOME/.codex/generated_images/<session>/<generated>.png" \
   --task-id scene-01-<hash>
 ```
+
+The command returns a project-local candidate path, SHA-256, required check
+IDs, and a QA template. Use the image-viewing tool to open the candidate at
+original detail and compare it with every task reference. Fill the template;
+do not infer a passing result from file validity.
+
+Record the structured review and promote only when all required checks pass:
+
+```bash
+python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+  --output-dir /absolute/path/to/story-project/build/storybook_auto \
+  --qa-report /absolute/path/to/completed-qa-report.json \
+  --candidate-sha256 <candidate-sha256> \
+  --task-id scene-01-<hash>
+```
+
+For a failed report, use the returned `retry_prompt`. When
+`strategy_change_required` becomes true, do not repeat the same prompt/reference
+combination: replace a contaminated reference, use a state-specific character
+reference, simplify the composition, or edit the closest candidate. Stop after
+three failed attempts and mark only that page for human exception review.
 
 Archive a rejected result once, by content hash, without making it a future
 reference:
@@ -276,6 +321,10 @@ Build PDFs only after every expected PNG validates:
 ```bash
 python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/story-project/build/storybook_auto \
+  --quality-status
+
+python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+  --output-dir /absolute/path/to/story-project/build/storybook_auto \
   --use-existing-images \
   --language both
 ```
@@ -304,6 +353,48 @@ python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook
   --language both
 ```
 
+## Structured Visual Quality Gate
+
+Every scene in a new final scene plan must include a machine-readable `qa`
+object. Use concrete canonical entity IDs, not vague prose:
+
+```json
+{
+  "qa": {
+    "risk_level": "high",
+    "required_entities": ["hero", "guide"],
+    "forbidden_entities": ["horse", "extra_guard"],
+    "exact_counts": {"hero": 1, "guide": 1},
+    "identity_states": {"hero": "gray_cave_guard_disguise"},
+    "relationships": ["hero stands beside guide on the same ground plane"],
+    "weapons": {"hero": "fully out of frame"},
+    "props": {"golden_rope": 1},
+    "height_rules": ["guide remains visibly taller than hero"],
+    "custom_checks": ["all garments fully cover the torso"],
+    "reference_bindings": {
+      "group-height": {
+        "use_for": ["height only"],
+        "do_not_copy": ["other group members", "background"],
+        "notes": "Do not copy absent characters from this lineup."
+      }
+    }
+  }
+}
+```
+
+The helper emits a QA template for each candidate. Replace every `pending`
+result after actual visual inspection. A passing report must set every required
+check to `pass`; `not_applicable` cannot be used to bypass a required contract.
+Use short stable failure codes such as `extra_character`, `wrong_identity`,
+`height_ratio`, `weapon_shape`, `prop_count`, `anatomy`, `layout`, or
+`readable_text` so repeated failures can trigger a strategy change.
+
+The reviewer must be evidence-driven. Inspect the candidate itself, not the
+prompt alone. For high-risk scenes, do two separate reviews: first the scene
+contract at original detail, then cross-page continuity in a contact sheet.
+When uncertain, use `needs_review`; never manufacture a passing report merely
+to unblock PDF creation.
+
 ## Image Generation Procedure
 
 The helper intentionally does not call image APIs. Do not add API-backed
@@ -321,10 +412,16 @@ For each pending entry in `generation_tasks.json`:
 5. Establish call-scoped source provenance. In serial directory-diff mode,
    require exactly one new readable PNG. In parallel mode, use only the exact
    per-call path or the worker's exclusive session subtree.
-6. Run `--import-image <source> --task-id <id>`.
-7. Confirm the command reports `complete`; do not manually rename an anonymous
-   parallel result.
-8. Continue with the next task assigned to that worker.
+6. Run `--import-candidate <source> --task-id <id>`.
+7. Open the candidate and its exact references with the image-viewing tool at
+   original detail. Check every emitted QA item and write a structured report.
+8. Run `--qa-report <report> --candidate-sha256 <sha> --task-id <id>`.
+9. Continue only when the command reports `approved`. On `fail`, use its retry
+   prompt and keep the final image path empty. Never rename a candidate into
+   `images/` manually.
+10. After all scene-level approvals, inspect a full chapter contact sheet for
+    identity, costume, weapon, height, color, and world continuity. Re-review
+    any outlier at original detail before PDF assembly.
 
 After interruption, rerun `--resume --prompts-only`; trust fresh PNG validation,
 not old progress events. Do not compress distinct scenes into variants of one

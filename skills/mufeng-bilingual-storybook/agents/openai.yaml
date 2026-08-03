@@ -1,4 +1,4 @@
 interface:
-  display_name: "mufeng-bilingual-storybook"
-  short_description: "Bilingual storybooks with Codex image_gen"
-  default_prompt: "Use $mufeng-bilingual-storybook to turn these markdown story materials into Chinese and English picture-book PDFs with Codex image_gen only."
+  display_name: "Mufeng Bilingual Storybook"
+  short_description: "AI-reviewed bilingual storybook PDFs"
+  default_prompt: "Use $mufeng-bilingual-storybook to turn these Markdown story materials into visually reviewed Chinese and English picture-book PDFs."

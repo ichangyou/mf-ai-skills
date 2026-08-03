@@ -25,12 +25,18 @@ Use this structure for a formal bilingual picture-book chapter:
 - `build/storybook_auto/manifest.json`
 - `build/storybook_auto/generation_tasks.json`
 - `build/storybook_auto/reference_manifest.json` when references are used
+- `build/storybook_auto/quality_gate.json`
 - `build/storybook_auto/progress.jsonl`
+- `build/storybook_auto/candidates/<task-id>/<sha256>.png`
+- `build/storybook_auto/qa_reports/<task-id>/<sha256>.json`
 - `build/storybook_auto/images/scene_01_title.png` ... `scene_N_title.png`
 - `build/storybook_auto/rejected_attempts/<sha256>.png` for explicitly archived
   rejected results
 - `build/storybook_auto/storybook.pdf`
 - `build/storybook_auto/storybook_en.pdf`
+- `build/storybook_auto/pdf_validation.json`
+- `build/storybook_auto/preview/final/zh/page_01.png` ...
+- `build/storybook_auto/preview/final/en/page_01.png` ...
 - `.mufeng-storybook/references/master/` for one shared copy of each original
 - `.mufeng-storybook/references/upload/` for 1024px JPEG upload proxies
 - `.mufeng-storybook/references/catalog.json` for the project-wide hash lock
@@ -52,18 +58,21 @@ Forbidden for this skill:
 
 If any old note recommends a Google provider fallback, ignore it. If Codex built-in `image_gen` is unavailable, report the block instead of switching providers.
 
-The helper never calls `image_gen`. It prepares text, a frozen manifest,
-generation tasks, progress events, validated imports, and PDF assembly outputs.
+The helper never calls `image_gen` or a vision API. It prepares text, a frozen
+manifest, generation tasks, candidate transactions, structured QA records,
+progress events, and PDF assembly outputs. Codex performs visual inspection by
+opening candidate and reference images with its image-viewing capability.
 `--prompts-only` creates prompts but no artwork; `--dry-run` creates tagged
 placeholder layout checks but no final artwork.
 
-For real artwork, call built-in `image_gen` once per pending task. Use the exact
+For real artwork, call built-in `image_gen` once per attempt. Use the exact
 prompt, stable `task_id`, and exact `referenced_image_paths` from
 `generation_tasks.json`. If that list is non-empty, pass it as
 `referenced_image_paths` and omit `num_last_images_to_include`; if it is empty,
 omit both reference arguments. Record timing around the call, establish
-call-scoped source provenance, and import through `--import-image`. Do not copy
-or rename anonymous parallel results manually.
+call-scoped source provenance, and import through `--import-candidate`. Do not
+copy or rename anonymous parallel results manually. Only `--qa-report` with a
+fully passing structured review can promote that candidate hash into `images/`.
 
 If an image appears in the conversation but no new PNG is persisted under
 `${CODEX_HOME:-$HOME/.codex}/generated_images/`, stop and report a Codex runtime
@@ -75,6 +84,11 @@ Gemini, `baoyu-image-gen`, OpenAI Images API, or any other fallback.
 Pass the smallest directory containing the story Markdown as `--project-dir`.
 Keep `--output-dir` inside that project. The helper rejects the resolved user
 home, filesystem root, and out-of-project output paths.
+
+For a multi-chapter series, also pass `--reference-root` as the nearest series
+ancestor. It must contain the chapter project and output. Reference specs and
+source paths resolve against that root, so canonical IDs and hashes stay stable
+across chapters while Markdown scanning remains chapter-local.
 
 The scanner uses `os.walk(..., topdown=True, followlinks=False)` and prunes
 hidden directories, `build`, `cache`, `dist`, `node_modules`, `vendor`, virtual
@@ -125,8 +139,9 @@ differences as the same file. Validate each task's exact prompt as well as its
 prompt hash against the manifest before importing artwork.
 
 Manifest v2 and later must contain a valid 64-character plan SHA-256. New
-outputs use manifest v3; referenced v3 plans also freeze
-`reference_manifest_sha256`. Migrate a pre-v2, hashless manifest explicitly:
+outputs use manifest v4. They freeze the scene `qa` contracts, book footer
+metadata, and whether the visual quality gate is required; referenced outputs
+also freeze `reference_manifest_sha256`. Migrate a pre-v2, hashless manifest explicitly:
 
 ```bash
 python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
@@ -155,7 +170,7 @@ cross-process lock; the writer performs a final filesystem check while holding
 that lock so an older scan cannot downgrade a concurrent import to pending. It
 does not reread Markdown.
 
-Treat a page as complete only when the exact expected target:
+For legacy outputs, `complete` means only that the exact expected target:
 
 - is a regular non-symlink file;
 - has a PNG signature and decodes as PNG;
@@ -163,10 +178,12 @@ Treat a page as complete only when the exact expected target:
 - has positive dimensions;
 - is not tagged as a dry-run placeholder.
 
-Keep corrupt or partial files in place for diagnosis; they remain pending and
-are replaced atomically only by a validated `--import-image` transaction.
-Never overwrite a valid existing target. If a new scene plan conflicts with
-valid artwork in the same output directory, use a new output directory.
+For new final outputs, filesystem completeness is not publication approval.
+The final PNG hash must also have a passing report in `quality_gate.json` whose
+QA-contract hash matches the frozen scene. Keep corrupt or partial files in
+place for diagnosis. Never overwrite a valid existing target. If a new scene
+plan conflicts with valid artwork in the same output directory, use a new
+output directory.
 
 ## Reference Assets And Traffic Control
 
@@ -270,7 +287,7 @@ Every manually recorded generation event includes `reference_count` and
 `generation_started` records make retries visible, but these values still
 describe local input files rather than measured wire bytes.
 
-## Safe Import Transaction
+## Candidate Import And Visual QA Transaction
 
 Import only a source below
 `${CODEX_HOME:-$HOME/.codex}/generated_images/`:
@@ -278,27 +295,46 @@ Import only a source below
 ```bash
 python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/build/storybook_auto \
-  --import-image "$HOME/.codex/generated_images/<session>/<result>.png" \
+  --import-candidate "$HOME/.codex/generated_images/<session>/<result>.png" \
   --task-id scene-01-<hash>
 ```
 
 The helper:
 
 1. verifies task/manifest hash agreement;
-2. rejects sources outside the built-in generated-images root;
-3. rejects symlinked, corrupt, empty, changing, non-PNG, or placeholder files;
-4. copies into `<output-dir>/images/.staging/`;
-5. verifies the staged SHA-256 equals the source SHA-256;
-6. atomically renames to the exact expected filename;
-7. revalidates the project-local target and logs its hash;
-8. refreshes all task filesystem statuses and payload summary under a
-   cross-process file lock;
-9. skips an already-valid target without changing it, while still refreshing
-   the task plan.
+2. requires a matching `generation_started`/`generation_returned` cycle;
+3. rejects sources outside the built-in generated-images root;
+4. rejects symlinked, corrupt, empty, changing, non-PNG, or placeholder files;
+5. copies into `<output-dir>/candidates/<task-id>/<sha256>.png`;
+6. verifies the project-local candidate hash;
+7. emits a QA template containing every built-in and scene-specific check;
+8. leaves the final `images/` target empty.
+
+Open the candidate and exact task references at original detail, complete the
+template, and record it:
+
+```bash
+python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+  --output-dir /absolute/path/to/build/storybook_auto \
+  --qa-report /absolute/path/to/completed-report.json \
+  --candidate-sha256 <sha256> \
+  --task-id scene-01-<hash>
+```
+
+A `pass` report is accepted only if every required check is `pass`. The helper
+copies the exact candidate bytes to the final filename, records candidate and
+QA-contract hashes, then refreshes task status. `fail` archives the candidate
+and returns a corrective retry prompt. `needs_review` never promotes artwork.
+After the same failure category occurs twice, change references or composition
+instead of resubmitting the same strategy. Stop after three failed attempts and
+escalate only that scene.
 
 `generation_started` is rejected if the exact task target is already a valid
 PNG. This closes the gap between import and the next resume so a loop that
 reloads `generation_tasks.json` cannot mistake a completed import for pending.
+
+`--import-image` remains only for legacy manifests whose quality gate is not
+required. The CLI refuses it for new final manifests.
 
 ## Rejected-Attempt Archive
 
@@ -372,7 +408,25 @@ For best quality, have Codex author a scene plan JSON before generating images:
     "narration_en": "The world had just opened. The journey west begins here.",
     "source_excerpt": "Relevant source quote or prose excerpt.",
     "prompt": "Full image prompt. No text in image.",
-    "references": ["hero-master", "weapon"]
+    "references": ["hero-master", "weapon"],
+    "qa": {
+      "risk_level": "high",
+      "required_entities": ["hero"],
+      "forbidden_entities": ["horse", "extra_guard"],
+      "exact_counts": {"hero": 1},
+      "identity_states": {"hero": "canonical costume"},
+      "weapons": {"hero": "fixed weapon visible"},
+      "props": {"lantern": 1},
+      "height_rules": ["hero remains shorter than guide"],
+      "custom_checks": ["hands and face are anatomically coherent"],
+      "reference_bindings": {
+        "hero-master": {
+          "use_for": ["identity only"],
+          "do_not_copy": ["background", "other figures"],
+          "notes": "Keep only the canonical hero identity."
+        }
+      }
+    }
   }
 ]
 ```
@@ -380,7 +434,9 @@ For best quality, have Codex author a scene plan JSON before generating images:
 Keep narration short enough for two PDF lines. Use the auto-selected count
 unless the user requests another count. Do not deliver the helper's inferred
 English (`Scene N.`) as translation; automatic inference is only a structural
-layout preview.
+layout preview. Every supplied final scene plan must define a non-empty `qa`
+contract for every scene. Use stable entity IDs consistently across the whole
+series.
 
 ## Prompt Rules
 
@@ -404,7 +460,8 @@ Use the same images for both languages. Only the title line, narration, footer, 
 Chinese:
 
 - PDF: `storybook.pdf`
-- Footer: short title such as `西游记 · 第一回`
+- Footer: explicit series/chapter title such as `西游记 · 第一回`; generic final
+  values such as `绘本` are rejected
 - Font rule: render Chinese page titles with `Songti.ttc` index `6`
   (`Songti SC Regular`), and Chinese captions/footer with `Songti.ttc` index
   `3` (`Songti SC Light`). Never rely on the default `Songti.ttc` index because
@@ -415,7 +472,12 @@ Chinese:
 English:
 
 - PDF: `storybook_en.pdf`
-- Footer: short title such as `Journey to the West - Chapter 1`
+- Footer: explicit series/chapter title such as
+  `Journey to the West - Chapter 1`; generic `Storybook` is rejected
+
+Store both footers during initial planning with `--footer-zh` and
+`--footer-en`. They are frozen in manifest book metadata and reused by
+`--pdf-only`. An explicit later override is allowed but still cannot be generic.
 
 ## Text-Only PDF Rebuild
 
@@ -466,7 +528,10 @@ python3 -m json.tool build/storybook_auto/manifest.json >/dev/null
 python3 -m json.tool build/storybook_auto/generation_tasks.json >/dev/null
 ```
 
-Render a few sample pages with `pdftoppm` when available:
+The helper renders every page to `preview/final/zh/` and
+`preview/final/en/` while creating the PDFs. It also writes
+`pdf_validation.json` with page count, footers, output hashes, and preview root.
+Use `pdftoppm` only as an independent spot check when available:
 
 ```bash
 mkdir -p build/storybook_auto/preview
@@ -474,7 +539,7 @@ pdftoppm -f 1 -l 1 -png -r 100 build/storybook_auto/storybook.pdf build/storyboo
 pdftoppm -f 1 -l 1 -png -r 100 build/storybook_auto/storybook_en.pdf build/storybook_auto/preview/page_en
 ```
 
-Inspect sampled pages for:
+Inspect the complete preview set and a contact sheet for:
 
 - No accidental ellipses in short titles
 - No text overlap
@@ -493,3 +558,7 @@ Also verify:
 - every line in `progress.jsonl` parses as one JSON object
 - every `generation_started` has a terminal returned/failed/persistence event
 - no unexpected PNG was adopted by filename or completion order
+- `--quality-status` reports `pass` and every final image hash has a matching
+  passing QA record
+- every supplied final scene has a non-empty structured QA contract
+- no generic footer is present and `pdf_validation.json` matches the PDFs

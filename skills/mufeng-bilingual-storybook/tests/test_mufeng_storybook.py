@@ -184,7 +184,7 @@ class MufengStorybookTests(unittest.TestCase):
                 json.dumps(manifest, ensure_ascii=False),
                 encoding="utf-8",
             )
-            with self.assertRaisesRegex(RuntimeError, "v3 is missing"):
+            with self.assertRaisesRegex(RuntimeError, "v4 is missing"):
                 MODULE.load_manifest(manifest_path)
 
             manifest.pop("manifest_version")
@@ -517,8 +517,8 @@ class MufengStorybookTests(unittest.TestCase):
             result = MODULE.rebuild_pdfs_only(
                 output,
                 "both",
-                "绘本",
-                "Storybook",
+                "示例故事 · 第一章",
+                "Example Story · Chapter 1",
                 captions,
             )
             self.assertEqual(result["status"], "pdf_only_complete")
@@ -572,6 +572,210 @@ class MufengStorybookTests(unittest.TestCase):
                 MODULE.sha256_file(Path(archived["path"])),
                 archived["sha256"],
             )
+
+    def test_quality_contract_rejects_contradictions(self):
+        scene = MODULE.Scene(
+            1,
+            "相遇",
+            "Meeting",
+            "",
+            "旁白",
+            "Narration",
+            "",
+            "prompt",
+            qa={
+                "required_entities": ["hero"],
+                "forbidden_entities": ["hero"],
+            },
+        )
+        with self.assertRaisesRegex(RuntimeError, "requires and forbids"):
+            MODULE.finalize_scenes([scene])
+
+        valid = MODULE.Scene(
+            1,
+            "相遇",
+            "Meeting",
+            "",
+            "旁白",
+            "Narration",
+            "",
+            "prompt",
+            references=["hero"],
+            qa={
+                "risk_level": "high",
+                "required_entities": ["hero"],
+                "forbidden_entities": ["horse"],
+                "exact_counts": {"hero": 1},
+                "reference_bindings": {
+                    "hero": {
+                        "use_for": ["identity"],
+                        "do_not_copy": ["background"],
+                    }
+                },
+            },
+        )
+        MODULE.finalize_scenes([valid])
+        self.assertIn("required_entities", MODULE.qa_required_check_ids(valid))
+        self.assertIn("reference_bindings", MODULE.qa_required_check_ids(valid))
+
+    def test_candidate_qa_gate_promotes_only_passing_artwork(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            project = root / "project"
+            output = project / "build" / "storybook"
+            project.mkdir()
+            scene = MODULE.Scene(
+                1,
+                "相遇",
+                "Meeting",
+                "",
+                "旁白",
+                "Narration",
+                "",
+                "prompt",
+                qa={
+                    "risk_level": "high",
+                    "required_entities": ["hero"],
+                    "forbidden_entities": ["horse"],
+                    "exact_counts": {"hero": 1},
+                },
+            )
+            MODULE.finalize_scenes([scene])
+            MODULE.write_outputs(
+                [],
+                [scene],
+                output,
+                "Story",
+                {"mode": "manual", "selected": 1},
+                "final",
+                footer_zh="示例故事 · 第一章",
+                footer_en="Example Story · Chapter 1",
+                quality_gate_required=True,
+            )
+            manifest_path = output / "manifest.json"
+            original_manifest = manifest_path.read_text(encoding="utf-8")
+            tampered_manifest = json.loads(original_manifest)
+            tampered_manifest["quality_gate_required"] = False
+            manifest_path.write_text(json.dumps(tampered_manifest), encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "release contract hash mismatch"):
+                MODULE.load_manifest(manifest_path)
+            manifest_path.write_text(original_manifest, encoding="utf-8")
+            inspections = MODULE.inspect_scene_images([scene], output / "images")
+            plan = MODULE.write_generation_plan(
+                output,
+                [scene],
+                inspections,
+                "final",
+                1,
+                "directory-diff",
+            )
+            task_id = plan["tasks"][0]["task_id"]
+            generated_root = root / "generated_images"
+
+            first_source = generated_root / "session" / "first.png"
+            write_png(first_source, color=(180, 40, 20))
+            with self.assertRaisesRegex(RuntimeError, "unaudited candidate import"):
+                MODULE.import_generated_candidate(
+                    output,
+                    task_id,
+                    first_source,
+                    generated_root=generated_root,
+                )
+            MODULE.record_generation_event(output, "generation_started", task_id)
+            MODULE.record_generation_event(output, "generation_returned", task_id)
+            first = MODULE.import_generated_candidate(
+                output,
+                task_id,
+                first_source,
+                generated_root=generated_root,
+            )
+            required_checks = first["required_checks"]
+            failed_report = project / "failed-qa.json"
+            failed_report.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "task_id": task_id,
+                        "candidate_sha256": first["candidate_sha256"],
+                        "verdict": "fail",
+                        "reviewer": "codex-vision",
+                        "checks": [
+                            {
+                                "id": check_id,
+                                "result": "fail" if check_id == "forbidden_entities" else "pass",
+                                "detail": "unexpected horse" if check_id == "forbidden_entities" else "ok",
+                            }
+                            for check_id in required_checks
+                        ],
+                        "failure_codes": ["extra_character"],
+                        "detail": "A forbidden horse is visible.",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            failed = MODULE.record_candidate_qa(
+                output,
+                task_id,
+                first["candidate_sha256"],
+                failed_report,
+            )
+            self.assertEqual(failed["status"], "fail")
+            self.assertIn("unexpected horse", failed["retry_prompt"].lower())
+            self.assertFalse((output / "images" / scene.expected_image).exists())
+            self.assertTrue(Path(failed["archived"]).is_file())
+
+            second_source = generated_root / "session" / "second.png"
+            write_png(second_source, color=(20, 120, 60))
+            MODULE.record_generation_event(output, "generation_started", task_id)
+            MODULE.record_generation_event(output, "generation_returned", task_id)
+            second = MODULE.import_generated_candidate(
+                output,
+                task_id,
+                second_source,
+                generated_root=generated_root,
+            )
+            passed_report = project / "passed-qa.json"
+            passed_report.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "task_id": task_id,
+                        "candidate_sha256": second["candidate_sha256"],
+                        "verdict": "pass",
+                        "reviewer": "codex-vision",
+                        "checks": [
+                            {"id": check_id, "result": "pass", "detail": "verified"}
+                            for check_id in second["required_checks"]
+                        ],
+                        "failure_codes": [],
+                        "detail": "All scene and continuity checks passed.",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            passed = MODULE.record_candidate_qa(
+                output,
+                task_id,
+                second["candidate_sha256"],
+                passed_report,
+            )
+            self.assertEqual(passed["status"], "approved")
+            manifest, scenes = MODULE.load_manifest(output / "manifest.json")
+            MODULE.require_quality_gate(output, scenes, manifest)
+            gate_path = output / MODULE.QUALITY_GATE_NAME
+            original_gate = gate_path.read_text(encoding="utf-8")
+            tampered_gate = json.loads(original_gate)
+            tampered_gate["attempts"][0]["reviewer"] = "tampered-reviewer"
+            gate_path.write_text(json.dumps(tampered_gate), encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "quality gate hash mismatch"):
+                MODULE.load_quality_gate(output, manifest["plan_sha256"])
+            gate_path.write_text(original_gate, encoding="utf-8")
+            rebuilt = MODULE.rebuild_pdfs_only(output, "both", None, None)
+            self.assertEqual(rebuilt["status"], "pdf_only_complete")
+            self.assertTrue((output / "preview" / "final" / "zh" / "page_01.png").is_file())
+            self.assertTrue((output / "preview" / "final" / "en" / "page_01.png").is_file())
+            with self.assertRaisesRegex(RuntimeError, "Generic final footer"):
+                MODULE.rebuild_pdfs_only(output, "both", "绘本", "Storybook")
 
     def test_cli_draft_resume_import_and_pdf_build(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -782,6 +986,10 @@ class MufengStorybookTests(unittest.TestCase):
                     "--use-existing-images",
                     "--language",
                     "both",
+                    "--footer-zh",
+                    "示例故事 · 第一章",
+                    "--footer-en",
+                    "Example Story · Chapter 1",
                 ],
                 text=True,
                 capture_output=True,
