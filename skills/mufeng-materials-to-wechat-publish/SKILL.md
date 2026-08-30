@@ -14,9 +14,9 @@ description: Use when source materials in a directory, such as notes, drafts, tr
 - Research current WeChat search intent before drafting. Choose one primary query and 3-6 supporting terms from verifiable current evidence; if live WeChat search evidence is unavailable, label the proxy source and uncertainty instead of inventing demand.
 - Map keywords naturally into the title, opening, useful H2 headings, summary, and relevant body sections. Treat YAML `tags` as internal metadata, not as a WeChat ranking signal or a substitute for body relevance.
 - Use the uploaded cover in both places: as `coverImage`/`--cover` publishing metadata and as the first rendered element of the WeChat article body. Put its Markdown image immediately after the H1 so the renderer can strip the H1 while leaving the cover first; place no text, visible metadata, caption, or divider before it.
-- Every generated or substantially revised article must pass the evidence and authenticity gate: real screenshots when available, personal experience, at least one failure/lesson, related article recommendations, and 2-3 authoritative sources.
+- Every generated or substantially revised article must pass the evidence and authenticity gate: real screenshots when available, personal experience, at least one failure/lesson, and 2-3 authoritative sources.
 - Before publishing, pass the originality, account-fit, title-integrity, and low-quality-content gates. Revise failures; stop before publishing when a material failure cannot be fixed from available evidence.
-- Every generated Markdown article must be Emoji-free except for the exact footer declaration line `📌 声明：本文由 AI 辅助完成`.
+- Every generated Markdown article must be Emoji-free. Do not add any AI-assist, AI-generated, or model-use declaration to the article body or footer.
 - Use Codex built-in image generation only for new cover and illustration images. Do not call OpenAI Images API, `baoyu-image-gen`, Google, DashScope, or other image CLIs unless the user explicitly asks to switch.
 - Do not use generated images as replacements for real screenshots. Real screenshots are evidence assets; never fabricate Codex, Claude, revenue, analytics, or project UI screenshots.
 - Default generated visuals to a restrained, article-specific technical-editorial direction. Do not default to neon gradients, glowing networks, floating interfaces, glossy 3D objects, robots, brains, circuit heads, or other recognizable generative-AI clichés.
@@ -38,7 +38,7 @@ Outputs:
 - SEO/GEO-friendly frontmatter with `title`, `slug`, `author`, `date`, `category`, `summary`, `tags`, and uploaded `coverImage`.
 - A documented WeChat search brief with the primary intent, primary query, 3-6 supporting terms, evidence source, and research date.
 - A body that starts with the uploaded cover image after the Markdown H1 and contains no visible summary or tag metadata blocks.
-- Article body with evidence-backed content: real screenshots when available, personal experience, failure/lesson, authoritative sources, and related article recommendations.
+- Article body with evidence-backed content: real screenshots when available, personal experience, failure/lesson, and authoritative sources.
 - Local PNG images under `imgs/<article-slug>/`.
 - Uploaded raw GitHub image URLs under `https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/<article-slug>/...`.
 - A final WeChat draft or publish result when publishing is not explicitly skipped.
@@ -47,20 +47,16 @@ Non-goals:
 - Do not rewrite a finished article from scratch unless the user asks for a rewrite.
 - Do not use generated images as generic decoration; each inline image should explain or reinforce nearby content.
 - Do not publish before the article has metadata, image URLs, and the required ending hook.
-- Do not invent personal experience, screenshots, income numbers, project results, source citations, or related-article URLs. If evidence is unavailable, record the gap in the completion report and omit the unsupported element or use a clearly labeled non-evidence illustration.
+- Do not invent personal experience, screenshots, income numbers, project results, or source citations. If evidence is unavailable, record the gap in the completion report and omit the unsupported element or use a clearly labeled non-evidence illustration.
 
 ## Markdown Emoji Rules
 
-- The final generated `.md` article must contain no Emoji symbols anywhere except this exact line:
-
-```markdown
-📌 声明：本文由 AI 辅助完成
-```
-
-- This ban applies to YAML frontmatter, title, H1/H2/H3 headings, summary, tags, body paragraphs, lists, blockquotes, code comments, image alt text, captions, `参考资料`, `相关阅读`, the engagement hook, and any copied source-material excerpts.
+- The final generated `.md` article must contain no Emoji symbols anywhere.
+- This ban applies to YAML frontmatter, title, H1/H2/H3 headings, summary, tags, body paragraphs, lists, blockquotes, code comments, image alt text, captions, `参考资料`, the engagement hook, footer, and any copied source-material excerpts.
+- Do not add `📌 声明：本文由 AI 辅助完成` or any equivalent disclosure about AI assistance, AI generation, model use, or automated writing.
 - If source materials or an existing draft contain Emoji, remove or rewrite them during article generation. Do not preserve Emoji in quotes or examples unless the user explicitly overrides this rule.
-- If the `mufeng-blog-writing` footer rule is used, keep only the exact allowed declaration line above. Do not add other Emoji to timestamp, location, call-to-action, headings, or section separators.
-- Before publishing, scan the final Markdown for Emoji. If any Emoji exists outside the exact allowed declaration line, remove it and re-check.
+- If the `mufeng-blog-writing` footer rule is used, keep only the timestamp and location. Omit all AI-assist declarations.
+- Before publishing, scan the final Markdown for Emoji and AI-assist declarations. Remove every match and re-check.
 
 ## Technical Blog Image Art Direction
 
@@ -117,12 +113,6 @@ Apply these rules to every generated or substantially revised article unless the
 - Add a `## 参考资料` section near the end using concise bullets. Keep links as Markdown links if the publishing pipeline supports them; otherwise include source names and plain URLs.
 - Format visible reference entries with the source title, publisher when useful, and URL. Never append access-date wording such as `访问日期`, `检索日期`, `Accessed`, or `Retrieved`. Preserve a verified publication or release date only when it is materially relevant to the citation.
 
-### Related Articles
-
-- Add `## 相关阅读` before the final engagement hook.
-- Recommend 2-4 related articles from the author's existing published/local writing when available. Use verified titles and URLs or local filenames; do not make up links.
-- If no related articles can be verified quickly, recommend topic titles without links and mark them as `可延伸阅读方向`, or omit the section and report why.
-
 ## WeChat Ending Hook Rules
 
 - Every generated or revised WeChat article must end with a short topic-specific engagement hook after the substantive conclusion.
@@ -137,6 +127,7 @@ Apply these rules to every generated or substantially revised article unless the
 
 - Keep the hook natural and restrained: no emojis, no excessive exclamation marks, no generic sales slogans, and no long unrelated self-promotion.
 - If the `mufeng-blog-writing` skill has footer rules, this hook is still mandatory. Place it after the article's normal conclusion and before any publishing-only metadata.
+- If the `mufeng-blog-writing` footer is used, format the timestamp as `YYYY.MM.DD HH:mm`, followed by the location on the next line. Example: `2026.08.30 18:20` and `沪 · 赵巷`. Do not use a date-only footer such as `2026.08.30`.
 - When revising an existing article, add or update the hook once. Do not duplicate existing calls to action.
 
 ## WeChat Search Intent and Content Quality Rules
@@ -218,7 +209,6 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/s
    - Identify available real screenshots and evidence assets before drafting: project UI, terminal/test output, analytics/revenue screenshots, code diffs, diagrams, and existing article screenshots.
    - Identify personal-experience material: project context, decisions, mistakes, failed attempts, tradeoffs, and results.
    - Identify source needs: list the claims that require 2-3 authoritative references, then verify those references before finalizing the article.
-   - Identify related-article candidates from the user's local/published writing when possible. Verify titles and URLs/paths before recommending them.
    - Research current WeChat search intent using the rules above. Record the research date, evidence source, 3-5 query variants, representative result patterns, and any access limitation.
    - Select one primary intent, one primary query, 3-6 supporting terms/entities, and one concrete reader outcome. Keep this search brief outside the visible article body.
    - Read the `mufeng-blog-writing` skill and follow its workflow, tone, structure, metadata, and footer rules.
@@ -228,11 +218,11 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/s
    - Generate a professional Chinese WeChat Official Account article as Markdown. It should be publish-ready, with frontmatter `title`, `slug`, `author: changyou`, `date: YYYY-MM-DD`, `category`, `summary`, and `tags`, plus a clear `#` title and practical structure.
    - Do not generate visible `摘要` or `标签` blocks before the main body. Store both values only in YAML frontmatter, overriding the `mufeng-blog-writing` output-format default.
    - Apply the keyword map while drafting: primary query in the title, direct intent answer in the opening, a natural H2 variant, and supporting terms only in relevant sections. Do not retrofit repeated keywords after drafting.
-   - Include the evidence and authenticity requirements: real screenshot placements when available, personal experience, at least one failure/lesson, `参考资料`, and `相关阅读`.
+   - Include the evidence and authenticity requirements: real screenshot placements when available, personal experience, at least one failure/lesson, and `参考资料`.
    - Do not add a standalone or disguised `真实开发过程`/`材料整理过程`/`证据链合成过程` section. Do not narrate files inspected, commands run, source-count inventory, research steps, or missing screenshots as article content.
    - In `参考资料`, omit access dates and access-date phrases. Keep verification dates only in the non-visible search brief or completion report.
-   - Remove all Emoji from the generated article except the exact `📌 声明：本文由 AI 辅助完成` footer declaration line.
-   - Put `参考资料` and `相关阅读` after the substantive conclusion and before the required WeChat ending hook.
+   - Remove all Emoji from the generated article. Do not append `📌 声明：本文由 AI 辅助完成` or any equivalent AI-assist declaration.
+   - Put `参考资料` after the substantive conclusion and before the required WeChat ending hook.
    - Append the required WeChat ending hook before saving the article.
    - Save the generated Markdown article in the requested directory unless the user specifies another output path. If no filename is specified, prefer `<article-slug>.md` over the Chinese title. If a target filename already exists, append `-v2`, `-v3`, etc. rather than overwriting.
    - The generated article becomes the target article for all later steps.
@@ -260,7 +250,7 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/s
    - Prefer keeping each PNG under 5 MB. Compress or resize only if upload/publish tools reject the file.
    - Confirm generated visuals are article-specific, restrained, legible at article width, and free of the prohibited AI clichés. Reject and regenerate generic neon/glowing-network/floating-UI/glossy-3D results.
    - Compare generated visuals with the recent local examples inspected in the image plan. Regenerate when the dominant palette, central composition, or metaphor is substantially the same without a topic-driven reason.
-   - Confirm the article includes: real screenshots when available, personal experience, failure/lesson, 2-3 authoritative sources, and related recommendations.
+   - Confirm the article includes: real screenshots when available, personal experience, failure/lesson, and 2-3 authoritative sources.
    - Confirm no `真实开发过程` or equivalent meta-production section remains in the article.
    - Confirm visible `参考资料` entries contain no access-date wording or appended access dates.
    - Confirm `summary` is 90-120 Chinese characters and accurately describes the published body without promotional filler.
@@ -350,8 +340,8 @@ Do not publish until this checklist has been checked against the final Markdown:
 - [ ] The article contains no `真实开发过程`, `材料整理过程`, `证据链合成过程`, or equivalent meta-production section.
 - [ ] The article cites 2-3 authoritative sources in `参考资料`; fast-moving facts have been verified during the task.
 - [ ] Visible `参考资料` entries do not contain `访问日期`, `检索日期`, `Accessed`, `Retrieved`, or appended access dates.
-- [ ] The article includes `相关阅读` with verified titles/links/paths, or the absence is documented.
-- [ ] No Emoji appears anywhere in the final Markdown except the exact line `📌 声明：本文由 AI 辅助完成`.
+- [ ] No Emoji appears anywhere in the final Markdown.
+- [ ] No AI-assist, AI-generated, or model-use declaration appears in the article body or footer.
 - [ ] The final engagement hook and fixed brand follow block are present exactly once.
 
 ## GitHub Upload Notes
@@ -379,8 +369,7 @@ Report:
 - Article-structure check: confirm no real-development-process or other meta-production section was added.
 - Authoritative sources cited, including count and whether they were verified during the task.
 - Reference-format check: confirm visible references omit access dates and access-date wording.
-- Related articles recommended, including titles and URLs/paths when available.
-- Emoji check result: confirm no Emoji remains outside `📌 声明：本文由 AI 辅助完成`.
+- Emoji and disclosure check result: confirm no Emoji or AI-assist declaration remains.
 - Whether the required WeChat ending hook was added or preserved.
 - Image direction used: subject, visual form, palette/material language, comparison against recent local images when available, and AI-cliché check result.
 - Cover URL and inline image URLs.

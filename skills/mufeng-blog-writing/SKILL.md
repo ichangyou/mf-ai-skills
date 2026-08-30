@@ -13,7 +13,7 @@ Produce mufeng.blog technical articles in Joey's friendly, professional tone. Ke
 2. Select the structure. Use the templates in `references/templates.md` and match the article type.
 3. Draft the content. Follow `references/identity.md`, ensure code is runnable and contextualized, and include best practices and pitfalls where relevant.
 4. Add metadata. Provide an optimized title, a 150-200 Chinese character summary, and 4-8 tags using `references/seo-checklist.md`.
-5. Append signature footer. Unless the user explicitly asks to skip, add a footer block at the end of the article with timestamp, location, and AI-assist declaration.
+5. Append signature footer. Unless the user explicitly asks to skip, add a footer block at the end of the article with timestamp and location only. Do not add any AI-assist, AI-generated, or model-use declaration.
 6. Run quality checks. Use the checklist in `references/seo-checklist.md` and fix issues.
 7. Save output file. Unless the user explicitly asks not to save, write the final Markdown article to the current working directory as a `.md` file.
 
@@ -26,8 +26,7 @@ Produce mufeng.blog technical articles in Joey's friendly, professional tone. Ke
 - Append a default footer block at the end of the article (unless user says not to):
   - Line 1: `YYYY.MM.DD HH:mm`
   - Line 2: `沪 · 赵巷` (or user-provided location)
-  - Blank line
-  - Line 4: `📌 声明：本文由 AI 辅助完成`
+  - Do not add `📌 声明：本文由 AI 辅助完成` or any equivalent AI-assist disclosure.
 - Default file output behavior:
   - Save a Markdown file to the current working directory.
   - If no filename is specified by the user, use the article title as filename and append `.md`.
