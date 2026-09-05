@@ -1,0 +1,4 @@
+# 本仓库是 Markdown Skill 集合，少量脚本只是 skill 的附属工具。
+# 排除后 GitHub 语言条不会把整个仓库误标成 Python / Shell。
+skills/**/*.py   linguist-detectable=false
+skills/**/*.sh   linguist-detectable=false
