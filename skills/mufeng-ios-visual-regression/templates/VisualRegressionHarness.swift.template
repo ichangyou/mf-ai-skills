@@ -1,0 +1,81 @@
+//
+//  VisualRegressionHarness.swift  (TEMPLATE — fill in the registry, then move
+//  into your app source and add it to the app target.)
+//
+//  DEBUG-only launch harness that drives the app directly to a single
+//  top-level screen for automated visual-regression screenshots. Compiled ONLY
+//  in DEBUG and only active when launched with `-VRScreen <id>`; in every normal
+//  launch the argument is absent and app behavior is unchanged.
+//
+//  Driven by the shared `mufeng-ios-visual-regression` skill.
+//
+
+#if DEBUG
+import UIKit
+
+enum VisualRegressionHarness {
+
+    private static let screenKey = "-VRScreen"
+    private static let langKey   = "-VRLang"
+    private static let styleKey  = "-VRStyle"   // light | dark
+
+    /// Screen registry: id -> builder producing the root VC to display.
+    /// Keys MUST match `screens[].id` in VisualRegression/config.json.
+    /// TODO: replace these with your app's screens + light fixtures.
+    private static let registry: [String: () -> UIViewController] = [
+        // "home":     { embedInNav(HomeViewController()) },
+        // "settings": { embedInNav(SettingsViewController()) },
+    ]
+
+    /// If launched for visual regression, install the requested screen as the
+    /// window root and return true. Otherwise return false (normal launch).
+    static func activateIfRequested(on window: UIWindow) -> Bool {
+        let args = ProcessInfo.processInfo.arguments
+        guard let screenId = value(for: screenKey, in: args),
+              let builder = registry[screenId] else {
+            return false
+        }
+
+        UIView.setAnimationsEnabled(false)
+
+        // TODO: seed any first-launch gates your app has so screens render
+        //       without onboarding/consent, e.g.:
+        // UserDefaults.standard.set(true, forKey: "PrivacyPolicyAgreed")
+
+        // TODO: set language via YOUR app's localization mechanism. If you use
+        //       runtime switching, call it here; otherwise the AppleLanguages
+        //       launch arg is the usual path.
+        // if let lang = value(for: langKey, in: args) { /* set language */ }
+        _ = langKey
+
+        // Appearance. Persisting your app's own "display style" preference (if
+        // any) as well as the window override avoids screens that re-apply their
+        // saved style resetting the window back to "follow system".
+        switch value(for: styleKey, in: args) {
+        case "light":
+            // UserDefaults.standard.set("light", forKey: "displayStyle")
+            window.overrideUserInterfaceStyle = .light
+        case "dark":
+            // UserDefaults.standard.set("dark", forKey: "displayStyle")
+            window.overrideUserInterfaceStyle = .dark
+        default:
+            break
+        }
+
+        window.rootViewController = builder()
+        return true
+    }
+
+    // MARK: - Helpers
+
+    private static func embedInNav(_ vc: UIViewController) -> UIViewController {
+        UINavigationController(rootViewController: vc)
+    }
+
+    private static func value(for key: String, in args: [String]) -> String? {
+        guard let idx = args.firstIndex(of: key), idx + 1 < args.count else { return nil }
+        let v = args[idx + 1]
+        return v.hasPrefix("-") ? nil : v
+    }
+}
+#endif

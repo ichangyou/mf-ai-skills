@@ -1,0 +1,16 @@
+{
+  "workspace": "YourApp.xcworkspace",
+  "scheme": "YourApp",
+  "configuration": "Debug",
+  "bundle_id": "com.example.yourapp",
+  "source_dir": "YourApp",
+  "simulator_name": "iPhone 16",
+  "settle_seconds": 4.0,
+  "diff_threshold_pct": 0.5,
+  "languages": "auto",
+  "styles": ["light", "dark"],
+  "screens": [
+    { "id": "home",     "name": "Home / main screen" },
+    { "id": "settings", "name": "Settings" }
+  ]
+}
