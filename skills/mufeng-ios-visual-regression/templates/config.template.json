@@ -7,6 +7,8 @@
   "simulator_name": "iPhone 16",
   "settle_seconds": 4.0,
   "diff_threshold_pct": 0.5,
+  "reboot_simulator": true,
+  "reset_privacy": true,
   "languages": "auto",
   "styles": ["light", "dark"],
   "screens": [

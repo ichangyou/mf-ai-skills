@@ -17,6 +17,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -69,37 +70,63 @@ def resolve_languages(project, cfg):
     return found
 
 
-def resolve_device(cfg):
-    booted = run(["xcrun", "simctl", "list", "devices", "booted", "-j"])
-    data = json.loads(booted.stdout or "{}")
-    for devs in data.get("devices", {}).values():
-        for d in devs:
-            if d.get("state") == "Booted":
-                print(f"[device] using already-booted {d['name']} ({d['udid']})")
-                return d["udid"]
+def _runtime_version(runtime_id):
+    """(26, 4) out of 'com.apple.CoreSimulator.SimRuntime.iOS-26-4'; (-1,) if unparsable."""
+    m = re.search(r"iOS-(\d+)(?:-(\d+))?", runtime_id or "")
+    if not m:
+        return (-1, -1)
+    return (int(m.group(1)), int(m.group(2) or 0))
 
-    avail = json.loads(run(["xcrun", "simctl", "list", "devices", "available", "-j"]).stdout)
+
+def resolve_device(cfg):
+    """Pick the simulator named in config.simulator_name.
+
+    Pixel diffs are resolution-sensitive, so baseline and check MUST run on the
+    same device+OS -- which is exactly why the configured name wins over
+    whatever happens to be booted. Grabbing an unrelated booted device silently
+    compares screenshots taken at two different resolutions, or (same
+    resolution, different OS) at two different system font/metrics revisions.
+
+    Among same-named devices across runtimes, an already-booted one wins (saves
+    a boot and respects a deliberate setup); otherwise the newest iOS runtime,
+    chosen deterministically rather than by dict order.
+    """
+    avail = json.loads(run(["xcrun", "simctl", "list", "devices", "available", "-j"]).stdout or "{}")
     want = cfg["simulator_name"]
-    candidate = None
-    for devs in avail.get("devices", {}).values():
+
+    named, iphones = [], []
+    for runtime_id, devs in avail.get("devices", {}).items():
         for d in devs:
-            if d.get("isAvailable") and d["name"] == want:
-                candidate = d
-                break
-    if candidate is None:
-        for devs in avail.get("devices", {}).values():
-            for d in devs:
-                if d.get("isAvailable") and d["name"].startswith("iPhone"):
-                    candidate = d
-                    break
-            if candidate:
-                break
-    if candidate is None:
-        sys.exit("No available iPhone simulator found. Create one in Xcode > Devices.")
-    udid = candidate["udid"]
-    print(f"[device] booting {candidate['name']} ({udid})")
-    run(["xcrun", "simctl", "boot", udid])
-    run(["xcrun", "simctl", "bootstatus", udid, "-b"])
+            if not d.get("isAvailable"):
+                continue
+            entry = (_runtime_version(runtime_id), d.get("state") == "Booted", d)
+            if d["name"] == want:
+                named.append(entry)
+            if d["name"].startswith("iPhone"):
+                iphones.append(entry)
+
+    pool, exact = (named, True) if named else (iphones, False)
+    if not pool:
+        sys.exit(f"No available simulator named {want!r}, and no iPhone fallback. "
+                 f"Create one in Xcode > Devices.")
+
+    # booted first, then newest runtime -- both deterministic.
+    pool.sort(key=lambda e: (e[1], e[0]), reverse=True)
+    version, booted, dev = pool[0]
+    udid, name = dev["udid"], dev["name"]
+    ios = f"iOS {version[0]}.{version[1]}" if version[0] >= 0 else "unknown runtime"
+
+    if not exact:
+        print(f"[device] WARNING: no simulator named {want!r}; falling back to "
+              f"{name} ({ios}). Baselines captured on a different device will "
+              f"diff on resolution alone -- fix simulator_name in config.json.")
+
+    if booted:
+        print(f"[device] using {name} ({ios}, already booted) {udid}")
+    else:
+        print(f"[device] booting {name} ({ios}) {udid}")
+        run(["xcrun", "simctl", "boot", udid])
+        run(["xcrun", "simctl", "bootstatus", udid, "-b"])
     return udid
 
 
@@ -159,6 +186,45 @@ def freeze_status_bar(udid):
          "--dataNetwork", "wifi", "--wifiBars", "3"])
 
 
+def clear_stuck_alerts(udid, cfg):
+    """Restart the device so no system alert survives into the run.
+
+    Permission alerts (photos, contacts, notifications) are drawn by
+    SpringBoard, not by the app, so `simctl terminate` + relaunch does NOT
+    dismiss them -- and neither does `simctl privacy reset`. One left over from
+    an earlier run sits on top of every screenshot that follows, dimming the
+    whole screen. Observed on ShotZen: a stuck photo prompt took en/light/home
+    from 0.000% to 73.972% against its own baseline.
+
+    Restarting the device is the only reliable clear. Costs ~20-30s once per
+    run; a full capture already takes minutes. Set "reboot_simulator": false in
+    config.json to skip it.
+    """
+    if not cfg.get("reboot_simulator", True):
+        return
+    print("[device] restarting to clear any stuck system alert...")
+    run(["xcrun", "simctl", "shutdown", udid])
+    run(["xcrun", "simctl", "boot", udid])
+    run(["xcrun", "simctl", "bootstatus", udid, "-b"])
+
+
+def reset_app_privacy(udid, bid, cfg):
+    """Return the app's TCC state to "will prompt on next use".
+
+    Otherwise permission state drifts between runs -- somebody taps Allow once
+    and every screen that renders a permission-dependent state silently changes
+    against baselines captured before that tap.
+
+    Requires the app to be installed, so call this after install. Projects whose
+    screens need granted access should set "reset_privacy": false and grant what
+    they need in their own harness fixtures.
+    """
+    if not cfg.get("reset_privacy", True):
+        return
+    run(["xcrun", "simctl", "privacy", udid, "reset", "all", bid])
+    print(f"[device] privacy reset for {bid}")
+
+
 def capture_all(project, cfg, udid, app, mode):
     bid = cfg["bundle_id"]
     root = os.path.join(project, "VisualRegression",
@@ -167,7 +233,11 @@ def capture_all(project, cfg, udid, app, mode):
     styles = cfg.get("styles", ["light"])
     settle = float(cfg["settle_seconds"])
 
+    # 顺序有讲究：重启会清掉状态栏 override 也会卸掉运行中的一切，
+    # privacy reset 又要求 app 已安装。
+    clear_stuck_alerts(udid, cfg)
     run(["xcrun", "simctl", "install", udid, app])
+    reset_app_privacy(udid, bid, cfg)
     freeze_status_bar(udid)
     print(f"[capture] mode={mode} langs={langs} styles={styles} "
           f"screens={len(cfg['screens'])}")

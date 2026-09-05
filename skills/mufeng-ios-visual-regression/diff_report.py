@@ -136,12 +136,13 @@ def render_html(results, report_dir, threshold):
     for it in ordered:
         st = it["status"]
         regressed = is_regression(it, threshold)
+        # 只有 "compared" 有数值 pct；其余状态 pct 是 None,
+        # 所以标签查表必须惰性 —— 字典字面量会把每个分支都求值一遍。
         badge = {
-            "compared": f'{it["pct"]:.2f}%',
             "new": "NEW (no baseline)",
             "missing": "MISSING current",
             "size-mismatch": "SIZE CHANGED",
-        }[st]
+        }.get(st) or f'{it["pct"]:.2f}%'
         cls = "bad" if regressed else ("warn" if st == "new" else "ok")
         overlay = it.get("overlay")
         rows.append(f"""
@@ -195,7 +196,8 @@ def main():
     if not results:
         sys.exit("No screenshots found. Run capture first.")
 
-    render_html(results, report_dir, threshold)
+    # 先把对比结果落盘再渲染：HTML 渲染一旦抛错, summary.json 已经在了,
+    # 否则整轮 capture 的数据会跟着报错一起丢掉。
     summary = {
         "threshold_pct": threshold,
         "items": results,
@@ -203,6 +205,8 @@ def main():
     }
     with open(os.path.join(report_dir, "summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
+
+    render_html(results, report_dir, threshold)
 
     regressions = summary["regressions"]
     print(f"report: {os.path.join(report_dir, 'index.html')}")

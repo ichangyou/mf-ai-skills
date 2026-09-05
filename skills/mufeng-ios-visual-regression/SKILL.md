@@ -61,7 +61,17 @@ After you modify any UI code, BEFORE reporting "done":
 ## Determinism notes
 
 - Status bar is frozen (`simctl status_bar override`, 9:41).
+- The device is restarted once per run and the app's TCC state reset, so no
+  leftover system permission alert or stale Allow/Deny bleeds into the shots.
+  A stuck alert is drawn by SpringBoard, so relaunching the app does not clear
+  it — it dims every screenshot that follows. Opt out per project with
+  `"reboot_simulator": false` / `"reset_privacy": false`.
+- A harness that renders a screen touching Photos/Contacts/etc. should avoid the
+  real framework under VR (fixtures + an `isActive` flag), or it will raise the
+  very prompt that pollutes the run.
 - Animations disabled; use fixed dates/fixtures for any date-bearing screen.
+  Prefer **midday UTC** — a near-midnight fixture renders a different calendar
+  day depending on the capturing machine's time zone.
 - Use the SAME simulator device+OS for baseline and check (pin via
   `simulator_name`). Pixel diffs are resolution-sensitive.
 - Threshold default 0.5% (the home-indicator anti-aliasing is a ~0.2% noise
