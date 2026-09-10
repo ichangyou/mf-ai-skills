@@ -225,6 +225,40 @@ def reset_app_privacy(udid, bid, cfg):
     print(f"[device] privacy reset for {bid}")
 
 
+# --- 废帧哨兵 -----------------------------------------------------------
+# 抓图是有竞态的：app 尚未前台就截，会得到桌面壁纸；尚未渲染就截，会得到纯色。
+# 这两种帧过去会被静默写进 baselines，之后每次 check 都拿它当"正确答案"比对，
+# 悄悄污染整套回归信号。这里抓完立刻校验，失败就重试，仍失败则让整轮非零退出。
+
+def _frame_health(path):
+    """返回 (唯一色数, 平均饱和度)；PIL 不可用时返回 None。"""
+    try:
+        from PIL import Image
+    except ImportError:
+        return None
+    im = Image.open(path).convert("RGB")
+    w, h = im.size
+    # 去掉状态栏与底部指示条，只看内容区
+    im = im.crop((0, int(h * 0.06), w, int(h * 0.94))).resize((w // 8, h // 8))
+    px = list(im.getdata())
+    uniq = len(set(px))
+    sat = sum(max(q) - min(q) for q in px) / len(px)
+    return uniq, sat
+
+
+def _dead_frame_reason(path):
+    """判定废帧并给出原因；健康帧返回 None。"""
+    health = _frame_health(path)
+    if health is None:
+        return None
+    uniq, sat = health
+    if uniq < 40:
+        return f"近乎纯色（app 未渲染）uniq={uniq}"
+    if sat > 42:
+        return f"高饱和（疑似截到桌面）sat={sat:.1f}"
+    return None
+
+
 def capture_all(project, cfg, udid, app, mode):
     bid = cfg["bundle_id"]
     root = os.path.join(project, "VisualRegression",
@@ -232,6 +266,8 @@ def capture_all(project, cfg, udid, app, mode):
     langs = resolve_languages(project, cfg)
     styles = cfg.get("styles", ["light"])
     settle = float(cfg["settle_seconds"])
+    check_dead = cfg.get("dead_frame_check", True)
+    dead = []
 
     # 顺序有讲究：重启会清掉状态栏 override 也会卸掉运行中的一切，
     # privacy reset 又要求 app 已安装。
@@ -259,10 +295,37 @@ def capture_all(project, cfg, udid, app, mode):
                 time.sleep(settle)
                 dst = os.path.join(out_dir, f"{sid}.png")
                 run(["xcrun", "simctl", "io", udid, "screenshot", dst])
+
+                # 抓到废帧就多等一轮重来；竞态基本一次重试即可消除
+                reason = _dead_frame_reason(dst) if check_dead else None
+                for attempt in range(1, 3):
+                    if reason is None:
+                        break
+                    print(f"  ~ retry {attempt} {lang}/{style}/{sid}: {reason}")
+                    run(["xcrun", "simctl", "terminate", udid, bid])
+                    if run(launch).returncode != 0:
+                        break
+                    time.sleep(settle * (1 + attempt))
+                    run(["xcrun", "simctl", "io", udid, "screenshot", dst])
+                    reason = _dead_frame_reason(dst)
+
                 total += 1
-                print(f"  captured {lang}/{style}/{sid}")
+                if reason is not None:
+                    dead.append((f"{lang}/{style}/{sid}", reason))
+                    print(f"  ! DEAD {lang}/{style}/{sid}: {reason}")
+                else:
+                    print(f"  captured {lang}/{style}/{sid}")
     run(["xcrun", "simctl", "terminate", udid, bid])
     print(f"[capture] wrote {total} screenshots under {root}")
+
+    if dead:
+        print(f"\n[capture] {len(dead)} 张废帧，重试后仍未渲染出界面：")
+        for name, reason in dead:
+            print(f"  - {name}: {reason}")
+        print("[capture] 中止：废帧写进 baselines 会长期污染回归结果。"
+              "可调高 config.json 的 settle_seconds 后重跑。")
+        sys.exit(1)
+
     return root
 
 

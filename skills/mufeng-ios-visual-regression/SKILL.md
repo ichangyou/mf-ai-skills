@@ -76,6 +76,15 @@ After you modify any UI code, BEFORE reporting "done":
   `simulator_name`). Pixel diffs are resolution-sensitive.
 - Threshold default 0.5% (the home-indicator anti-aliasing is a ~0.2% noise
   floor). Raise per project if a screen has unavoidable dynamic content.
+- **Dead-frame sentinel.** Capture races the app: shooting before it is
+  foregrounded yields the springboard wallpaper, shooting before it renders
+  yields a flat colour. Both used to be written into `baselines/` silently and
+  then served as the "correct answer" on every later check. Each shot is now
+  validated (unique-colour count + mean saturation over the content area);
+  a bad frame is retried up to twice with a longer settle, and if it still
+  fails the whole run exits non-zero rather than storing garbage. Opt out with
+  `"dead_frame_check": false`. Needs Pillow; the check silently no-ops without it.
+  Seeing this fire means `settle_seconds` is too low for the machine — raise it.
 
 ## Known failure
 
