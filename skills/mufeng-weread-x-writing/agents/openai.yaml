@@ -1,0 +1,4 @@
+interface:
+  display_name: "沐风·微信读书推文"
+  short_description: "从微信读书笔记提炼原创中文 X 推文，支持长期语义去重"
+  default_prompt: "使用 $mufeng-weread-x-writing 从我的微信读书记录中生成今日值得发布的中文推文。"
