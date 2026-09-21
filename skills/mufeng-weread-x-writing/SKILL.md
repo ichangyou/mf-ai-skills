@@ -117,10 +117,45 @@ python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/history.p
 
 宁缺毋滥。最多输出 6 条；只有 3–4 条合格时就输出 3–4 条。
 
-### 7. 输出并写入历史
+### 7. 输出、落盘并写入历史
 
 严格使用 [references/memory-and-output.md](references/memory-and-output.md) 中的展示格式。指出“今日最值得发布的 2 条”，只给编号、主题和简短理由，不重复正文。
 
+#### 落盘为 Markdown
+
+终端输出之外，本轮结果必须另存一份 Markdown 文件。**统一通过 `scripts/save_output.py` 落盘，不要自己拼路径或用 Write 直接写文件**——目录判定、文件名递增和防覆盖都已固化在脚本里。
+
+```bash
+# 正文从标准输入传入，脚本负责加文件头并选路径
+python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/save_output.py --count 6 < body.md
+
+# 只想知道会落到哪里，不写文件
+python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/save_output.py --dry-run
+```
+
+脚本回包为 JSON：`path` 是绝对路径，`dir_kind` 为 `project` 或 `root`，`written` 表示是否真的写了文件。终端那行「已保存到 …」直接用 `path`。
+
+脚本实现的规则（说明用，不需要手工复刻）：
+
+**目录判定**：默认取当前工作目录，也可用 `--cwd` 指定。
+
+- 等于 `/` 或等于 `$HOME` → 视为根目录，写入 `~/Downloads/`。
+- 其余任何目录一律视为项目目录 → 写入该目录。不要求目录里有 `.git`、`package.json` 之类的项目标志。
+
+**文件名**：`weread-x-YYYY-MM-DD.md`，日期取本地当天。同一天重复运行时依次改为 `weread-x-YYYY-MM-DD-2.md`、`-3.md`，**不覆盖**任何已存在的文件。
+
+**文件内容**：与终端展示的是同一份内容（编号正文 + 来源/主题/新鲜度/去重说明 + 今日最值得发布的 2 条），只在顶部多一个文件头。骨架见 [references/memory-and-output.md](references/memory-and-output.md) 的“Markdown 文件输出”一节。
+
+**终端输出不变**：仍按展示格式打印全部正文，末尾补一行「已保存到 `<绝对路径>`」。
+
+**写盘失败**时照常输出全文，并明确说明未保存及原因，不要静默跳过。
+
+> 本条覆盖全局 CLAUDE.md 中“分析/规划文档默认存到 `~/Desktop`”的约定。本 skill 的产物按上面的目录判定走；用户本轮另行指定路径时，以用户指定的为准。
+
+#### 写入历史
+
 输出完成后，将本轮每条候选以 `status: generated` 追加到历史。保存正文、时间、观点指纹、主题、来源书籍、素材摘要、表达结构和关键词。若写入失败，仍可返回结果，但必须说明历史未保存，因此下一次无法保证跨会话去重。
+
+历史文件路径与落盘的 Markdown 无关，始终按「本地历史」一节的规则处理，不随 `cwd` 变化。
 
 不要把来源元信息混入推文正文。不要在历史中保存整章、长段原文或 API 原始回包。
