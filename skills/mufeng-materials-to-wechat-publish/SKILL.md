@@ -14,6 +14,7 @@ description: Use when source materials in a directory, such as notes, drafts, tr
 - Research current WeChat search intent before drafting. Choose one primary query and 3-6 supporting terms from verifiable current evidence; if live WeChat search evidence is unavailable, label the proxy source and uncertainty instead of inventing demand.
 - Map keywords naturally into the title, opening, useful H2 headings, summary, and relevant body sections. Treat YAML `tags` as internal metadata, not as a WeChat ranking signal or a substitute for body relevance.
 - Use the uploaded cover in both places: as `coverImage`/`--cover` publishing metadata and as the first rendered element of the WeChat article body. Put its Markdown image immediately after the H1 so the renderer can strip the H1 while leaving the cover first; place no text, visible metadata, caption, or divider before it.
+- For articles whose subject is a technical thing, satisfy the `Technical Explainer Contract` and the `No-Filler Rules` before running the quality gates. The contract is a coverage requirement, not a section template.
 - Every generated or substantially revised article must pass the evidence and authenticity gate: real screenshots when available, personal experience, at least one failure/lesson, and 2-3 authoritative sources.
 - Before publishing, pass the originality, account-fit, title-integrity, and low-quality-content gates. Revise failures; stop before publishing when a material failure cannot be fixed from available evidence.
 - Every generated Markdown article must be Emoji-free. Do not add any AI-assist, AI-generated, or model-use declaration to the article body or footer.
@@ -86,6 +87,32 @@ Build each ImageGen prompt from these fields:
 5. **Palette and material:** 2-4 named colors plus paper, ink, metal, glass, or another restrained material language.
 6. **Rendering constraints:** text-free, no watermark, no fake UI, clean edges, technically plausible relationships.
 7. **Exclusions:** list the relevant AI clichés from the prohibition above, plus any palette or composition already overused in recent local images.
+
+## Technical Explainer Contract
+
+Apply this contract when the article's subject is a technical thing: a tool, framework, API, protocol, model, library, command, or engineering method. Skip it for 成长, 读书笔记, and 投资 articles, and record the skip in the completion report.
+
+This is a coverage requirement, not a section template. Every item below must be answered somewhere in the body. Do not create eight mechanical headings to satisfy it, and never add an empty heading to pass the check.
+
+1. **技术点是什么** — Name the exact thing and its boundary in one or two sentences before any elaboration. State what it is not whenever readers confuse it with a neighboring concept, for example MCP 与普通插件 or Agent 与 Workflow.
+2. **存在的意义** — The condition that made it necessary: what people did before it existed and what that cost them. Ground this in a real constraint; `随着 AI 的发展` and similar scene-setting does not count as an answer.
+3. **有什么作用** — The concrete capability, stated as outcomes a reader can verify: 能做什么, 省掉哪一步, 换来什么结果. When this would repeat 存在的意义, merge the two. Never state the same fact twice under two headings.
+4. **第一原理** — The mechanism one level below the marketing description: the data flow, the constraint it exploits, or the tradeoff it accepts, and why the approach works at all. Support it with documentation, source code, a protocol or spec, or your own experiment. When the mechanism cannot be verified, state the known boundary instead. Never invent an internal mechanism.
+5. **怎么使用** — A minimal path the reader can run: prerequisites, the smallest working command or code, the expected output, how to tell it worked, and the one or two errors most people hit first. Prefer one complete minimal example over several partial fragments.
+6. **给出实战案例** — At least one case from your own work: project context, what you actually ran, the observable result such as output, screenshot, timing, or a before/after comparison, and the decision you made. This case also satisfies the personal-experience requirement in `Article Evidence and Authenticity Rules`. Do not add a second invented example beside it.
+7. **痛点与解决方法** — State the reader's concrete pain in their own words, then the specific fix, then what the fix does not solve. Pair every 痛点 with a 解决方法 in the same section; an unpaired complaint is filler. The unsolved part also satisfies the failure/limitation requirement.
+8. **顺序与答案前置** — A reliable order is 痛点 → 是什么 → 意义与作用 → 第一原理 → 怎么用 → 实战案例 → 边界取舍. Reorder when the material reads better another way, but keep every section answer-first: its first sentence is the answer, not the setup.
+
+### No-Filler Rules
+
+These extend the low-quality-content gate in `Originality and Recommendation-Readiness Gates`. Run both together.
+
+- Deletion test: for each paragraph ask 删掉这段，读者损失了哪条信息、哪个判断、哪个步骤. If the answer is none, delete the paragraph.
+- Remove banned openers and transitions: `随着 XX 的发展`, `众所周知`, `在当今时代`, standalone transition paragraphs, `首先/其次/最后` used as the only structure, and background scene-setting placed before the first concrete fact.
+- Do not restate a conclusion already stated verbatim. A closing section may compress the argument and add the applicability boundary, but must not repeat body sentences.
+- Do not paraphrase official documentation without adding a judgment, a measurement, a comparison, or a limitation.
+- Cut information-free adjectives such as `非常强大` or `极其丝滑` unless the number or observation that earns them follows immediately.
+- Every H2 must deliver at least one of: a fact, a mechanism, a step, a comparison, a measurement, or a decision.
 
 ## Article Evidence and Authenticity Rules
 
@@ -218,6 +245,7 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/s
    - Generate a professional Chinese WeChat Official Account article as Markdown. It should be publish-ready, with frontmatter `title`, `slug`, `author: changyou`, `date: YYYY-MM-DD`, `category`, `summary`, and `tags`, plus a clear `#` title and practical structure.
    - Do not generate visible `摘要` or `标签` blocks before the main body. Store both values only in YAML frontmatter, overriding the `mufeng-blog-writing` output-format default.
    - Apply the keyword map while drafting: primary query in the title, direct intent answer in the opening, a natural H2 variant, and supporting terms only in relevant sections. Do not retrofit repeated keywords after drafting.
+   - For a technical-subject article, organize the draft around the `Technical Explainer Contract` while writing. Do not draft first and retrofit the required answers afterwards.
    - Include the evidence and authenticity requirements: real screenshot placements when available, personal experience, at least one failure/lesson, and `参考资料`.
    - Do not add a standalone or disguised `真实开发过程`/`材料整理过程`/`证据链合成过程` section. Do not narrate files inspected, commands run, source-count inventory, research steps, or missing screenshots as article content.
    - In `参考资料`, omit access dates and access-date phrases. Keep verification dates only in the non-visible search brief or completion report.
@@ -255,6 +283,8 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/s
    - Confirm visible `参考资料` entries contain no access-date wording or appended access dates.
    - Confirm `summary` is 90-120 Chinese characters and accurately describes the published body without promotional filler.
    - Confirm the title, opening, at least one useful H2, and relevant body sections implement the keyword map naturally. Remove repetitions added only for ranking.
+   - Run the technical-contract coverage check: name the section that answers each of the eight required items. Fix a missing answer by rewriting or merging sections, never by adding an empty heading.
+   - Apply the `No-Filler Rules` to every paragraph and heading before running the quality gates.
    - Run the originality, account-fit, title-integrity, and low-quality-content gates. Revise every failure before continuing.
    - If authoritative sources or real screenshots are missing for claims that depend on them, fix the article before publishing.
 
@@ -329,6 +359,9 @@ Do not publish until this checklist has been checked against the final Markdown:
 - [ ] Account-fit gate passed for `写 AI，写成长，偶尔写投资`, or explicit user approval for an off-topic article is documented.
 - [ ] Title-integrity gate passed: every promise is supported and no fake urgency, unsupported absolute, misleading omission, or official impersonation remains.
 - [ ] Low-quality-content gate passed: every section adds evidence, a decision, example, comparison, finding, or actionable step.
+- [ ] Technical Explainer Contract covered: 技术点是什么, 存在的意义, 有什么作用, 第一原理, 怎么使用, 给出实战案例, and 痛点与解决方法 are each answered in a named section with no fact restated under two headings, or the article is documented as non-technical.
+- [ ] 第一原理 is supported by documentation, source, spec, or an own experiment, or the unverified boundary is stated instead; no internal mechanism is invented.
+- [ ] No-Filler Rules applied: no banned opener, standalone transition paragraph, verbatim restated conclusion, or unearned adjective remains, and every H2 delivers a fact, mechanism, step, comparison, measurement, or decision.
 - [ ] The body contains no visible metadata-only `摘要` or `标签` blocks; `summary` and `tags` exist only in frontmatter.
 - [ ] The first rendered body element is the uploaded cover image: in Markdown it appears immediately after the H1, with no text, caption, or divider before it.
 - [ ] At least one real screenshot is included when available, and every screenshot is redacted as needed.
@@ -365,6 +398,7 @@ Report:
 - Body-opening check: confirm visible summary/tag blocks were removed and the cover is the first rendered body element.
 - Generated article path.
 - Article path changed.
+- Technical-contract coverage table: each of the eight required items mapped to the section that answers it, or the reason the article is exempt.
 - Evidence inventory: real screenshots used, personal experience added, and failure/lesson added.
 - Article-structure check: confirm no real-development-process or other meta-production section was added.
 - Authoritative sources cited, including count and whether they were verified during the task.
