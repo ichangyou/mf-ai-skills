@@ -68,8 +68,6 @@ date: YYYY-MM-DD
 
 YYYY.MM.DD HH:mm
 沪 · 赵巷
-
-📌 声明：本文由 AI 辅助完成
 ```
 
 ### 文件保存规则
@@ -150,8 +148,6 @@ Tags: ...
 
 YYYY.MM.DD HH:mm
 沪 · 赵巷
-
-📌 声明：本文由 AI 辅助完成
 ```
 
 ### File Saving Rules

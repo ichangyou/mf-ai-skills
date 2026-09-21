@@ -11,11 +11,26 @@ Produce mufeng.blog technical articles in Joey's friendly, professional tone. Ke
 ## Workflow
 1. Clarify the request. Confirm topic, article type (tech share, tutorial, or problem-solving), target stack, and expected depth. If missing, assume a standard technical article and state assumptions.
 2. Select the structure. Use the templates in `references/templates.md` and match the article type.
-3. Draft the content. Follow `references/identity.md`, ensure code is runnable and contextualized, and include best practices and pitfalls where relevant.
+3. Draft the content. Follow `references/identity.md`, ensure code is runnable and contextualized, and include best practices and pitfalls where relevant. For a technical-subject article, also satisfy the `Technical Explainer Contract` below while drafting.
 4. Add metadata. Provide an optimized title, a 150-200 Chinese character summary, and 4-8 tags using `references/seo-checklist.md`.
 5. Append signature footer. Unless the user explicitly asks to skip, add a footer block at the end of the article with timestamp and location only. Do not add any AI-assist, AI-generated, or model-use declaration.
 6. Run quality checks. Use the checklist in `references/seo-checklist.md` and fix issues.
 7. Save output file. Unless the user explicitly asks not to save, write the final Markdown article to the current working directory as a `.md` file.
+
+## Technical Explainer Contract
+
+For an article whose subject is a technical thing (tool, framework, API, protocol, model, library, command, or engineering method), the body must answer all of the following. This is a coverage requirement, not a section template: merge overlapping items instead of restating the same fact, and keep every section answer-first.
+
+1. 技术点是什么 — the exact definition and boundary, including what it is not.
+2. 存在的意义 — what people did before it existed and what that cost them.
+3. 有什么作用 — verifiable outcomes: 能做什么 / 省掉哪一步 / 换来什么结果.
+4. 第一原理 — the mechanism, constraint, or tradeoff underneath, backed by docs, source, spec, or your own experiment; state the boundary instead of guessing.
+5. 怎么使用 — a minimal runnable path: prerequisites, smallest example, expected output, how to verify, and the first common errors.
+6. 给出实战案例 — one case from your own work with observable results and the decision you made.
+7. 痛点与解决方法 — paired in the same section, plus what the fix does not solve.
+8. 不要有废话 — delete any paragraph that costs the reader no information, judgment, or step; no `随着 XX 的发展` openers, standalone transition paragraphs, verbatim restated conclusions, or unearned adjectives.
+
+Full rules, including the enforcing quality gates and checklist: `~/.agents/skills/mufeng-materials-to-wechat-publish/SKILL.md`, sections `Technical Explainer Contract` and `No-Filler Rules`.
 
 ## Output Format
 - Return Markdown only.
