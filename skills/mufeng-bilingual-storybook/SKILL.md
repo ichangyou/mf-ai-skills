@@ -100,15 +100,54 @@ bytes change, the helper refuses the change; use a new ID deliberately.
 Scene-plan `references` must contain stable IDs from `--reference-spec`.
 Duplicates are rejected and each scene has a hard maximum of three references;
 prefer two. For ImageGen, pass only that task's exact `referenced_image_paths`
-from `generation_tasks.json` and omit `num_last_images_to_include`. Never attach
-the master originals, rejected attempts, the whole project, or implicit
-conversation images.
+from `generation_tasks.json` and omit `num_last_images_to_include`. Never use master originals or rejected attempts as canonical references,
+or attach the whole project or implicit conversation images. An inspected
+project-local candidate may be an explicit localized-edit target; it does not
+become an approved identity/style reference.
 
 `reference_payload_bytes` and progress field
 `local_reference_payload_bytes` are local file-size accounting, not measured
 network traffic. They exclude multipart/base64 overhead, retries, client-added
 context, downloads, cloud sync, and other Codex sessions. Do not promise a
 200–500MB total from these numbers.
+
+## Revision And Release Workflow
+
+Read [references/revision-release.md](references/revision-release.md) for an
+existing chapter, any single-page change, or final PDF delivery.
+
+- Freeze scene meaning and bilingual captions first. Run `--preflight-text`
+  before artwork generation. Resolve overflow by editing narration without
+  losing story facts; never silently truncate captions or shrink fonts.
+- For an otherwise approved image with a local defect, use a localized ImageGen
+  edit. Pass the inspected project-local original as the edit target alongside
+  the required task references; the target is not a new canonical reference.
+  This revision mode supplements the frozen prompt with the specific correction.
+  Keep faces, scale, composition and all unaffected objects fixed. Rewrite
+  the spatial correction for the current image (target, direction, open/closed
+  state); do not copy left/right directions from an older composition.
+- Reopen only the requested page with `--revise-page --task-id ... --detail ...`.
+  This archives the original, makes that page pending, and blocks PDF assembly.
+  Normal candidate QA promotes the replacement; `--cancel-revision` restores
+  the original. Do not manually replace files under `images/`.
+- A corrected candidate must still pass the whole page contract: local edits
+  can introduce regressions elsewhere. Inspect only affected neighboring pages
+  for continuity; retain valid approvals for all unchanged image hashes.
+- On high-risk checks, record what is visible, where, and why it passes. For
+  weapon counts, orientation and height, use original-detail views/crops and
+  measurable evidence where feasible. Boilerplate such as "requirement
+  satisfied" is insufficient evidence. Uncertain measurements remain review
+  items; do not claim precise ratios without a defensible ground plane.
+- Build both languages from the same frozen input set. `release_manifest.json`
+  binds image bytes, complete bilingual text, fonts, renderer, story manifest
+  and PDF hashes. New builds start at `awaiting_pdf_review`, not `released`.
+- Review rendered pages of the actual PDFs, including captions and footers.
+  Then use `--approve-release --detail ...` to record that review. This verifies
+  the frozen inputs, quality gate and actual PDF page counts again. Never run
+  it merely because generation succeeded.
+- User approval of current artwork is authoritative. If QA records are stale,
+  inspect the current bytes and record a new hash-bound review; do not regenerate
+  approved artwork or fabricate historical reports to repair bookkeeping.
 
 ## Workflow
 
@@ -146,7 +185,7 @@ context, downloads, cloud sync, and other Codex sessions. Do not promise a
    - Chinese: `storybook.pdf`
    - English: `storybook_en.pdf`
 10. Verify page count, image count, progress timings, `pdf_validation.json`,
-    and every rendered Chinese/English preview page.
+    and every rendered Chinese/English PDF page; record the final release review.
 
 Do not use a custom output directory as source material. The helper prunes the
 resolved output path even when its name is not `build`.
@@ -330,7 +369,7 @@ python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook
 ```
 
 For a text-only revision, use a caption plan and `--pdf-only`. This path reads
-the frozen manifest and verified images, writes only PDFs and progress events,
+the frozen manifest and verified images, writes PDFs, release/validation records and progress events,
 and does not rewrite `manifest.json`, `generation_tasks.json`, references, or
 send images:
 

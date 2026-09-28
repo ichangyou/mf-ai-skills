@@ -1005,6 +1005,107 @@ class MufengStorybookTests(unittest.TestCase):
             self.assertIn("image_imported", events)
             self.assertIn("pdf_written", events)
 
+    def release_fixture(self, output, gated=False):
+        scene = MODULE.Scene(1, "标题", "Title", "", "旁白。", "A short caption.", "", "prompt")
+        if gated:
+            scene.qa = {"risk_level": "high", "required_entities": ["hero"]}
+        MODULE.finalize_scenes([scene])
+        MODULE.write_outputs([], [scene], output, "Story", {"mode": "manual", "selected": 1}, "final",
+                             footer_zh="示例故事 · 第一章", footer_en="Example Story · Chapter 1", quality_gate_required=gated)
+        write_png(output / "images" / MODULE.image_name(scene))
+        inspections = MODULE.inspect_scene_images([scene], output / "images")
+        MODULE.write_generation_plan(output, [scene], inspections, "final", 1, "directory-diff")
+        return scene
+
+    def test_text_preflight_rejects_overflow_without_replacing_pdf(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            scene = self.release_fixture(output)
+            MODULE.preflight_text([scene])
+            scene.narration_en = "A long caption with several words. " * 100
+            sentinel = output / "storybook.pdf"
+            sentinel.write_bytes(b"previous PDF")
+            with self.assertRaisesRegex(RuntimeError, "scene 1 en narration"):
+                MODULE.build_pdfs([scene], output, "both", "示例", "Example", output / "progress.jsonl", "test")
+            self.assertEqual(sentinel.read_bytes(), b"previous PDF")
+            scene.narration_en = "W" * 300
+            with self.assertRaisesRegex(RuntimeError, "preflight failed"):
+                MODULE.preflight_text([scene], "en")
+
+    def test_revision_backup_rollback_and_other_page_preservation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            scene = self.release_fixture(output)
+            original = output / "images" / MODULE.image_name(scene)
+            digest = MODULE.sha256_file(original)
+            other = output / "images" / "unaffected.png"
+            write_png(other)
+            other_bytes = other.read_bytes()
+            result = MODULE.revise_page(output, scene.task_id, "aim the mouth at the target")
+            self.assertFalse(original.exists())
+            self.assertEqual(MODULE.sha256_file(Path(result["backup"])), digest)
+            MODULE.record_generation_event(output, "generation_started", scene.task_id)
+            with self.assertRaisesRegex(RuntimeError, "active revision"):
+                MODULE.revise_page(output, scene.task_id, "another change")
+            MODULE.revise_page(output, scene.task_id, "", cancel=True)
+            self.assertEqual(MODULE.sha256_file(original), digest)
+            self.assertEqual(other.read_bytes(), other_bytes)
+            with self.assertRaisesRegex(RuntimeError, "already has a valid"):
+                MODULE.record_generation_event(output, "generation_started", scene.task_id)
+
+    def test_release_review_rejects_changed_image_and_pdf(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            scene = self.release_fixture(output)
+            MODULE.rebuild_pdfs_only(output, "both", None, None)
+            release_path = output / "release_manifest.json"
+            release = json.loads(release_path.read_text())
+            self.assertEqual(release["status"], "awaiting_pdf_review")
+            result = MODULE.approve_release(output, "Reviewed both rendered pages and captions")
+            self.assertEqual(result["status"], "released")
+            image_path = output / "images" / MODULE.image_name(scene)
+            original = image_path.read_bytes()
+            write_png(image_path, color=(90, 30, 10))
+            with self.assertRaisesRegex(RuntimeError, "image changed"):
+                MODULE.approve_release(output, "Reviewed")
+            image_path.write_bytes(original)
+            (output / "storybook_en.pdf").write_bytes(b"changed PDF")
+            with self.assertRaisesRegex(RuntimeError, "PDF changed"):
+                MODULE.approve_release(output, "Reviewed")
+
+    def test_actual_pdf_page_count_is_checked(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            self.release_fixture(output)
+            MODULE.rebuild_pdfs_only(output, "both", None, None)
+            with self.assertRaisesRegex(RuntimeError, "page count"):
+                MODULE.verify_pdf_pages(output / "storybook.pdf", 2)
+
+    def test_revision_candidate_promotes_only_after_full_qa(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / "book"
+            scene = self.release_fixture(output, gated=True)
+            old_hash = MODULE.sha256_file(output / "images" / MODULE.image_name(scene))
+            revision = MODULE.revise_page(output, scene.task_id, "fix local prop direction")
+            source = root / "generated" / "new.png"
+            write_png(source, color=(70, 90, 20))
+            MODULE.record_generation_event(output, "generation_started", scene.task_id)
+            MODULE.record_generation_event(output, "generation_returned", scene.task_id)
+            imported = MODULE.import_generated_candidate(output, scene.task_id, source, source.parent)
+            report = json.loads(Path(imported["qa_template"]).read_text())
+            report["verdict"] = "pass"
+            for check in report["checks"]:
+                check.update(result="pass", detail="Inspected current candidate at original detail")
+            report_path = root / "review.json"
+            report_path.write_text(json.dumps(report))
+            self.assertFalse((output / "images" / MODULE.image_name(scene)).exists())
+            MODULE.record_candidate_qa(output, scene.task_id, imported["candidate_sha256"], report_path)
+            self.assertEqual(MODULE.sha256_file(output / "images" / MODULE.image_name(scene)), imported["candidate_sha256"])
+            self.assertEqual(MODULE.sha256_file(Path(revision["backup"])), old_hash)
+            self.assertFalse((output / "revisions" / scene.task_id / "active.json").exists())
+            self.assertEqual(MODULE.quality_gate_failures(output, [scene], MODULE.load_manifest(output / "manifest.json")[0]), [])
+
 
 if __name__ == "__main__":
     unittest.main()

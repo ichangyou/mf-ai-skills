@@ -20,6 +20,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import textwrap
 import time
 import unicodedata
@@ -2620,6 +2621,9 @@ def record_candidate_qa(
 
     write_quality_gate(output_dir, gate)
     if promoted_path is not None:
+        revision_state = output_dir / "revisions" / task_id / "active.json"
+        if revision_state.exists():
+            os.replace(revision_state, revision_state.with_name(f"completed-{candidate_sha256}.json"))
         refresh_generation_plan_status(output_dir)
         append_progress(
             output_dir / PROGRESS_LOG_NAME,
@@ -2666,6 +2670,10 @@ def record_candidate_qa(
         "strategy_change_required": repeated_failure,
     }
     if report["verdict"] == "fail":
+        result["recommended_strategy"] = (
+            "regenerate_scene" if set(report.get("failure_codes", [])) & {"wrong_identity", "extra_character", "layout", "scene_match"}
+            else "localized_edit"
+        )
         result["retry_prompt"] = retry_prompt_from_report(
             str(task["prompt"]), report
         )
@@ -2793,6 +2801,134 @@ def resolve_pdf_footers(
     )
 
 
+def preflight_text(scenes: Sequence[Scene], language: str = "both") -> None:
+    """Check full text with the same fonts and widths used by the renderer."""
+    from PIL import Image, ImageDraw
+    draw = ImageDraw.Draw(Image.new("RGB", (1600, 1200)))
+    failures = []
+    for lang in ("zh", "en"):
+        if language not in (lang, "both"):
+            continue
+        for scene in scenes:
+            title = scene.title_en if lang == "en" else scene.title_zh
+            narration = scene.narration_en if lang == "en" else scene.narration_zh
+            for role, text, limit, size in (
+                ("title", f"{scene.number:02d}. {title}", 1, 32 if lang == "en" else 34),
+                ("narration", narration, 2, 32 if lang == "en" else 38),
+            ):
+                font = load_pdf_font(size, lang, bold=role == "title")
+                lines = wrap_text(draw, text, font, 1464)
+                if not text.strip() or len(lines) > limit or any(text_width(draw, line, font) > 1464 for line in lines):
+                    failures.append(f"scene {scene.number} {lang} {role}: empty or exceeds {limit} lines")
+    if failures:
+        raise RuntimeError("Text preflight failed; revise captions before generating artwork/PDFs:\n" + "\n".join(failures))
+
+
+def revise_page(output_dir: Path, task_id: str, detail: str, cancel: bool = False) -> Dict[str, object]:
+    """Keep the previous bytes recoverable while one page goes through normal QA."""
+    if not detail.strip() and not cancel:
+        raise RuntimeError("--detail must explain the requested page revision.")
+    plan = load_generation_plan(output_dir)
+    task = find_generation_task(plan, task_id)
+    target = output_dir / "images" / str(task["expected_image"])
+    state = output_dir / "revisions" / task_id / "active.json"
+    if cancel:
+        record = json.loads(state.read_text(encoding="utf-8"))
+        backup = state.parent / record["backup"]
+        if sha256_file(backup) != record["previous_sha256"]:
+            raise RuntimeError("Revision backup hash mismatch.")
+        if target.exists() and sha256_file(target) != record["previous_sha256"]:
+            raise RuntimeError("A new image was already promoted; refusing rollback over it.")
+        atomic_copy_file(backup, target)
+        state.unlink()
+    else:
+        if state.exists():
+            raise RuntimeError("This page already has an active revision; resume or cancel it.")
+        valid, reason, info = inspect_png(target)
+        if not valid:
+            raise RuntimeError(f"Cannot revise invalid original PNG: {reason}")
+        backup = state.parent / f"{info['sha256']}.png"
+        atomic_copy_file(target, backup)
+        atomic_write_text(state, json.dumps({"previous_sha256": info["sha256"], "backup": backup.name, "detail": detail, "started_at": utc_now()}, ensure_ascii=False, indent=2))
+        task.update(status="pending", status_reason="active page revision", image=None)
+        complete = sum(item["status"] == "complete" for item in plan["tasks"])
+        plan["summary"].update(complete=complete, pending=len(plan["tasks"]) - complete,
+            planned_reference_payload_bytes_per_pending_pass=sum(int(item.get("reference_payload_bytes") or 0) for item in plan["tasks"] if item["status"] != "complete"))
+        atomic_write_text(output_dir / GENERATION_PLAN_NAME, json.dumps(plan, ensure_ascii=False, indent=2))
+        target.unlink()
+    refresh_generation_plan_status(output_dir)
+    append_progress(output_dir / PROGRESS_LOG_NAME, "revision_cancelled" if cancel else "revision_started", task_id=task_id, detail=detail)
+    return {"status": "restored" if cancel else "revision_pending", "task_id": task_id, "backup": str(backup), "detail": detail}
+
+
+def verify_pdf_pages(path: Path, expected: int) -> None:
+    try:
+        import pypdfium2
+    except ImportError:
+        executable = shutil.which("pdfinfo")
+        if not executable:
+            raise RuntimeError("PDF validation requires pypdfium2 or pdfinfo.")
+        result = subprocess.run([executable, str(path)], check=True, capture_output=True, text=True)
+        match = re.search(r"^Pages:\s+(\d+)", result.stdout, re.MULTILINE)
+        count = int(match.group(1)) if match else -1
+    else:
+        with pypdfium2.PdfDocument(str(path)) as document:
+            count = len(document)
+            for page in document:
+                bitmap = page.render(scale=0.1)
+                bitmap.close()
+                page.close()
+    if count != expected:
+        raise RuntimeError(f"Actual PDF page count {count} differs from expected {expected}: {path}")
+
+
+def release_inputs(scenes: Sequence[Scene], language: str, footer_zh: str, footer_en: str) -> Dict[str, object]:
+    return {
+        "language": language,
+        "footers": {"zh": footer_zh, "en": footer_en},
+        "renderer_sha256": sha256_file(Path(__file__)),
+        "fonts": [{"path": str(font.path), "index": getattr(font, "index", 0),
+                   "sha256": sha256_file(Path(font.path))}
+                  for lang in ("zh", "en") for bold in (False, True)
+                  for font in [load_pdf_font(32, lang, bold)]],
+        "pages": [{"number": scene.number, "image_path": str(Path(scene.image_path).resolve()),
+                   "image_sha256": sha256_file(Path(scene.image_path)),
+                   "title_zh": scene.title_zh, "title_en": scene.title_en,
+                   "narration_zh": scene.narration_zh, "narration_en": scene.narration_en} for scene in scenes],
+    }
+
+
+def approve_release(output_dir: Path, detail: str) -> Dict[str, object]:
+    """Record final rendered-PDF review only for the exact frozen release bytes."""
+    if not detail.strip():
+        raise RuntimeError("--detail must describe the actual final PDF visual review.")
+    path = output_dir / "release_manifest.json"
+    release = json.loads(path.read_text(encoding="utf-8"))
+    if canonical_sha256(release["inputs"]) != release["inputs_sha256"]:
+        raise RuntimeError("Release input contract hash mismatch.")
+    if release["inputs"]["renderer_sha256"] != sha256_file(Path(__file__)):
+        raise RuntimeError("Renderer changed; rebuild the PDFs.")
+    for font in release["inputs"]["fonts"]:
+        if sha256_file(Path(font["path"])) != font["sha256"]:
+            raise RuntimeError("Release font changed; rebuild the PDFs.")
+    if release.get("captions_plan") and sha256_file(Path(release["captions_plan"])) != release["captions_sha256"]:
+        raise RuntimeError("Caption plan changed; rebuild the PDFs.")
+    for item in release["inputs"]["pages"]:
+        if sha256_file(Path(item["image_path"])) != item["image_sha256"]:
+            raise RuntimeError("Release image changed; rebuild the PDFs.")
+    manifest, scenes = load_manifest(output_dir / "manifest.json")
+    if release["manifest_sha256"] != sha256_file(output_dir / "manifest.json"):
+        raise RuntimeError("Story manifest changed; rebuild the PDFs.")
+    require_quality_gate(output_dir, scenes, manifest)
+    for item in release["outputs"]:
+        if sha256_file(Path(item["path"])) != item["sha256"]:
+            raise RuntimeError("Release PDF changed; rebuild the PDFs.")
+        verify_pdf_pages(Path(item["path"]), len(release["inputs"]["pages"]))
+    release.update(status="released", reviewed_at=utc_now(), review_detail=detail)
+    atomic_write_text(path, json.dumps(release, ensure_ascii=False, indent=2))
+    return {"status": "released", "release_manifest": str(path), "inputs_sha256": release["inputs_sha256"]}
+
+
 def make_pdf(
     scenes: Sequence[Scene],
     output_pdf: Path,
@@ -2802,6 +2938,7 @@ def make_pdf(
 ) -> None:
     from PIL import Image, ImageDraw
 
+    preflight_text(scenes, language)
     output_pdf.parent.mkdir(parents=True, exist_ok=True)
     if output_pdf.is_symlink():
         raise RuntimeError(f"Refusing to replace a PDF symlink: {output_pdf}")
@@ -2835,8 +2972,8 @@ def make_pdf(
         else:
             title = scene.title_zh
             narration = scene.narration_zh
-        draw_lines(draw, wrap_text(draw, f"{scene.number:02d}. {title}", title_font, page_w - margin * 2, 1), (margin, caption_top), title_font, (45, 38, 30), 8)
-        draw_lines(draw, wrap_text(draw, narration, caption_font, page_w - margin * 2, 2), (margin, caption_top + 56), caption_font, (75, 58, 42), 12)
+        draw_lines(draw, wrap_text(draw, f"{scene.number:02d}. {title}", title_font, page_w - margin * 2), (margin, caption_top), title_font, (45, 38, 30), 8)
+        draw_lines(draw, wrap_text(draw, narration, caption_font, page_w - margin * 2), (margin, caption_top + 56), caption_font, (75, 58, 42), 12)
         draw.text((margin, page_h - 44), footer, font=footer_font, fill=(118, 97, 75))
         page_num = f"{index}/{len(scenes)}"
         if (
@@ -2962,6 +3099,8 @@ def build_pdfs(
     progress_path: Path,
     run_id: str,
 ) -> List[str]:
+    preflight_text(scenes, language)
+    frozen_inputs = release_inputs(scenes, language, footer_zh, footer_en)
     outputs = []
     for current_language, filename, footer in (
         ("zh", "storybook.pdf", footer_zh),
@@ -2994,6 +3133,7 @@ def build_pdfs(
             size_bytes=pdf_path.stat().st_size,
             elapsed_ms=round((time.perf_counter() - pdf_started) * 1000),
         )
+        verify_pdf_pages(pdf_path, len(scenes))
         outputs.append(str(pdf_path))
     atomic_write_text(
         output_dir / "pdf_validation.json",
@@ -3017,6 +3157,14 @@ def build_pdfs(
             indent=2,
         ),
     )
+    if frozen_inputs != release_inputs(scenes, language, footer_zh, footer_en):
+        raise RuntimeError("Release inputs changed during PDF generation; rebuild.")
+    atomic_write_text(output_dir / "release_manifest.json", json.dumps({
+        "schema_version": 1, "status": "awaiting_pdf_review", "generated_at": utc_now(),
+        "manifest_sha256": sha256_file(output_dir / "manifest.json"),
+        "inputs": frozen_inputs, "inputs_sha256": canonical_sha256(frozen_inputs),
+        "outputs": [{"path": str(Path(path).resolve()), "sha256": sha256_file(Path(path))} for path in outputs],
+    }, ensure_ascii=False, indent=2))
     return outputs
 
 
@@ -3074,6 +3222,11 @@ def rebuild_pdfs_only(
             progress_path,
             run_id,
         )
+        if captions_plan is not None:
+            release_path = output_dir / "release_manifest.json"
+            release = json.loads(release_path.read_text(encoding="utf-8"))
+            release.update(captions_plan=str(caption_path), captions_sha256=caption_hash)
+            atomic_write_text(release_path, json.dumps(release, ensure_ascii=False, indent=2))
         append_progress(
             progress_path,
             "run_finished",
@@ -3271,7 +3424,7 @@ def main() -> None:
         "--captions-plan",
         type=Path,
         default=None,
-        help="Text-only caption overrides; valid only with --pdf-only.",
+        help="Text-only caption overrides for --pdf-only or --preflight-text.",
     )
     parser.add_argument("--progress-event", choices=sorted(PROGRESS_EVENTS), default=None)
     parser.add_argument("--task-id", default="")
@@ -3301,6 +3454,10 @@ def main() -> None:
         default=None,
         help="Archive one rejected generated PNG once by content hash.",
     )
+    parser.add_argument("--revise-page", action="store_true", help="Archive one current page and reopen it for candidate QA.")
+    parser.add_argument("--cancel-revision", action="store_true", help="Restore the archived original of an active revision.")
+    parser.add_argument("--preflight-text", action="store_true", help="Check frozen bilingual captions before generating artwork.")
+    parser.add_argument("--approve-release", action="store_true", help="Record visual review of the exact final PDF pair.")
     args = parser.parse_args()
 
     output_dir = args.output_dir.expanduser().resolve()
@@ -3312,12 +3469,29 @@ def main() -> None:
         + int(args.quality_status)
         + int(args.archive_rejected is not None)
         + int(args.pdf_only)
+        + int(args.revise_page) + int(args.cancel_revision)
+        + int(args.preflight_text) + int(args.approve_release)
     )
     if command_actions > 1:
         raise RuntimeError(
             "Use only one command action at a time: progress, import, candidate "
             "QA, quality status, rejected archive, or PDF-only."
         )
+    if args.revise_page or args.cancel_revision:
+        if not args.task_id:
+            raise RuntimeError("--task-id is required for page revision.")
+        print(json.dumps(revise_page(output_dir, args.task_id, args.detail, args.cancel_revision), ensure_ascii=False))
+        return
+    if args.approve_release:
+        print(json.dumps(approve_release(output_dir, args.detail), ensure_ascii=False))
+        return
+    if args.preflight_text:
+        _manifest, scenes = load_manifest(output_dir / "manifest.json")
+        if args.captions_plan:
+            scenes = apply_caption_overrides(scenes, load_caption_overrides(args.captions_plan, scenes))
+        preflight_text(scenes, args.language)
+        print(json.dumps({"status": "pass", "page_count": len(scenes)}))
+        return
     if args.captions_plan is not None and not args.pdf_only:
         raise RuntimeError("--captions-plan is valid only with --pdf-only.")
     if args.pdf_only:
