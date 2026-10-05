@@ -1,7 +1,9 @@
-# mf-ai-skills
+# Mufeng AI Skills
 
-沐风（Joey）的开源 AI skill 集合，共 16 个，支持 **Codex 和 Claude Code**。
-覆盖写作与发布、阅读与复盘、思考与决策、iOS 工程和研究分析。两端共用 `skills/` 中的同一份内容。
+面向 **Codex 和 Claude Code** 的开源技能集，覆盖内容创作、阅读整理、研发协作和应用检查。
+
+由沐风（Joey）维护，共 16 个 skill，涵盖写作与发布、阅读与复盘、思考与决策、iOS 工程和研究分析。
+两端共用 `skills/` 中的同一份内容。
 生图、账号数据和发布需要额外配置工具与凭据。
 
 ## 快速安装
