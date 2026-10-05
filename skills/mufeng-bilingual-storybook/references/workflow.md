@@ -48,36 +48,32 @@ For a forced 20-page version, use `--scene-count 20 --output-dir build/storybook
 
 ## Image Generation Policy
 
-All live artwork generation must use Codex built-in `image_gen` only.
-
-Forbidden for this skill:
-
-- Google/Gemini image APIs and `GOOGLE_API_KEY`.
-- Local Google provider modules, including provider code under `baoyu-image-gen`.
-- OpenAI Images API, `OPENAI_API_KEY`, or ad hoc SDK clients.
-
-If any old note recommends a Google provider fallback, ignore it. If Codex built-in `image_gen` is unavailable, report the block instead of switching providers.
+Prefer Codex built-in `image_gen` when available. Claude Code can use a configured
+image skill/tool. Read [platforms.md](platforms.md) for source-root setup. Never switch
+providers automatically. If no tool is available, produce only the text/prompt plan
+and report that artwork generation was not executed.
 
 The helper never calls `image_gen` or a vision API. It prepares text, a frozen
 manifest, generation tasks, candidate transactions, structured QA records,
-progress events, and PDF assembly outputs. Codex performs visual inspection by
+progress events, and PDF assembly outputs. The host agent performs visual inspection by
 opening candidate and reference images with its image-viewing capability.
 `--prompts-only` creates prompts but no artwork; `--dry-run` creates tagged
 placeholder layout checks but no final artwork.
 
-For real artwork, call built-in `image_gen` once per attempt. Use the exact
+For real artwork, call the selected image tool once per attempt. Use the exact
 prompt, stable `task_id`, and exact `referenced_image_paths` from
-`generation_tasks.json`. If that list is non-empty, pass it as
+`generation_tasks.json`. For Codex ImageGen, if that list is non-empty, pass it as
 `referenced_image_paths` and omit `num_last_images_to_include`; if it is empty,
 omit both reference arguments. Record timing around the call, establish
 call-scoped source provenance, and import through `--import-candidate`. Do not
 copy or rename anonymous parallel results manually. Only `--qa-report` with a
 fully passing structured review can promote that candidate hash into `images/`.
 
-If an image appears in the conversation but no new PNG is persisted under
-`${CODEX_HOME:-$HOME/.codex}/generated_images/`, stop and report a Codex runtime
-persistence failure. Do not substitute screenshots, placeholders, SVGs, Google,
-Gemini, `baoyu-image-gen`, OpenAI Images API, or any other fallback.
+If the selected tool does not persist a readable PNG under the configured source
+root, stop and report a persistence failure. Do not substitute screenshots,
+placeholders or SVGs. Import and verify each generated image in the project before
+continuing. Source-root checks and event logs do not authenticate the provider;
+record actual tool evidence in the completion report.
 
 ## Project Scan Safety
 
@@ -118,7 +114,7 @@ In draft mode, a manual count or supplied scene plan must be exactly 6 or 8.
 Approve the draft scene structure, then generate the formal plan in a separate
 output directory without `--draft`.
 
-The helper script makes this deterministic from Markdown metrics: CJK character count, Latin word count, paragraph count, sentence count, heading count, and a combined complexity score. It uses body length and paragraph complexity as the primary signal so classical Chinese short sentences do not inflate the page count by themselves. If Codex has already authored a `--scene-plan`, the number of JSON scene items overrides `--scene-count`.
+The helper script makes this deterministic from Markdown metrics: CJK character count, Latin word count, paragraph count, sentence count, heading count, and a combined complexity score. It uses body length and paragraph complexity as the primary signal so classical Chinese short sentences do not inflate the page count by themselves. If the host agent has already authored a `--scene-plan`, the number of JSON scene items overrides `--scene-count`.
 
 Current auto thresholds:
 
@@ -144,7 +140,7 @@ metadata, and whether the visual quality gate is required; referenced outputs
 also freeze `reference_manifest_sha256`. Migrate a pre-v2, hashless manifest explicitly:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/build/storybook_auto \
   --resume \
   --migrate-legacy-manifest \
@@ -157,7 +153,7 @@ and logs `legacy_manifest_migrated`. Never add or remove the hash manually.
 Resume with:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/build/storybook_auto \
   --resume \
   --prompts-only
@@ -263,14 +259,14 @@ results, PDF timings, and final status.
 Record ImageGen time explicitly:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/build/storybook_auto \
   --progress-event generation_started \
   --task-id scene-01-<hash>
 
-# Call built-in image_gen once.
+# Call the selected image tool once.
 
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/build/storybook_auto \
   --progress-event generation_returned \
   --task-id scene-01-<hash>
@@ -293,9 +289,9 @@ Import only a source below
 `${CODEX_HOME:-$HOME/.codex}/generated_images/`:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/build/storybook_auto \
-  --import-candidate "$HOME/.codex/generated_images/<session>/<result>.png" \
+  --import-candidate "<image-output-dir>/<call-id>/<result>.png" \
   --task-id scene-01-<hash>
 ```
 
@@ -303,7 +299,7 @@ The helper:
 
 1. verifies task/manifest hash agreement;
 2. requires a matching `generation_started`/`generation_returned` cycle;
-3. rejects sources outside the built-in generated-images root;
+3. rejects sources outside the configured generated-images root;
 4. rejects symlinked, corrupt, empty, changing, non-PNG, or placeholder files;
 5. copies into `<output-dir>/candidates/<task-id>/<sha256>.png`;
 6. verifies the project-local candidate hash;
@@ -314,7 +310,7 @@ Open the candidate and exact task references at original detail, complete the
 template, and record it:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/build/storybook_auto \
   --qa-report /absolute/path/to/completed-report.json \
   --candidate-sha256 <sha256> \
@@ -341,9 +337,9 @@ required. The CLI refuses it for new final manifests.
 If a persisted PNG is valid but visually rejected, archive it explicitly:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/build/storybook_auto \
-  --archive-rejected "$HOME/.codex/generated_images/<session>/<result>.png" \
+  --archive-rejected "<image-output-dir>/<call-id>/<result>.png" \
   --task-id scene-01-<hash> \
   --detail "wrong costume"
 ```
@@ -371,7 +367,7 @@ Stay serial unless provenance isolation is available:
 ```
 
 The helper rejects parallel shared-directory diff mode. It plans and validates
-tasks but does not launch ImageGen or prove runtime provenance; the Codex
+tasks but does not launch ImageGen or prove runtime provenance; the host
 orchestrator must enforce the following protocol:
 
 1. Assign disjoint task IDs to at most four workers.
@@ -395,7 +391,7 @@ project-local targets remain pending.
 
 ## Scene Plan JSON
 
-For best quality, have Codex author a scene plan JSON before generating images:
+For best quality, have the host agent author a scene plan JSON before generating images:
 
 ```json
 [
@@ -449,7 +445,7 @@ Each image prompt should include:
 - Character continuity
 - World continuity
 - Constraints: no readable text, captions, labels, speech bubbles, borders, or watermark
-- Generation policy: use Codex built-in `image_gen` only; no Google/Gemini/API/provider fallback
+- Generation policy: use the selected configured image tool; no automatic provider fallback
 
 For inscriptions, tablets, signs, plaques, scrolls, or carved stones, request abstract decorative marks only.
 
@@ -504,7 +500,7 @@ allowed. Prompt, description, expected-image, and reference changes are
 rejected.
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/build/storybook_auto \
   --pdf-only \
   --captions-plan /absolute/path/to/captions.json \

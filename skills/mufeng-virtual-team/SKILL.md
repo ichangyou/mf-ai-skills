@@ -1,6 +1,7 @@
 ---
 name: mufeng-virtual-team
 description: 用 AI 虚拟团队（CTO / 产品经理 / 普通用户三角色）评审一个产品功能是否值得做。适用于：评估新功能、判断某个想法要不要做、担心方案过度设计、想在写代码前暴露盲区。触发词：功能评审、虚拟团队、这个功能值不值得做、多角色评审、CTO 视角、帮我评估这个功能、mufeng virtual team。
+compatibility: "Codex and Claude Code. Current conversation and any task-specific source materials; subagents are optional unless the workflow requires independent execution."
 ---
 
 # 虚拟产品团队评审

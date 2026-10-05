@@ -2,3 +2,4 @@
 # 排除后 GitHub 语言条不会把整个仓库误标成 Python / Shell。
 skills/**/*.py   linguist-detectable=false
 skills/**/*.sh   linguist-detectable=false
+examples/**/*.py linguist-detectable=false

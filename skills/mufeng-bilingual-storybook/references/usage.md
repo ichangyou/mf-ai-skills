@@ -2,25 +2,25 @@
 
 ## 简介
 
-`mufeng-bilingual-storybook` 是一个可在 Codex 中复用的 AI skill，用于把项目中的 Markdown 故事材料制作成中英文绘本。
+`mufeng-bilingual-storybook` 是一个可在 Codex 和 Claude Code 中复用的 AI skill，用于把项目中的 Markdown 故事材料制作成中英文绘本。
 
 它适合这类任务：
 
 - 读取项目内所有 Markdown 文件
 - 根据故事内容拆分绘本分镜
 - 生成中文旁白、英文旁白和图片提示词
-- 使用 Codex 内置生图能力生成每页插图
+- 使用当前平台已配置的生图工具生成每页插图
 - 生成中文版 PDF 和英文版 PDF
 
-核心原则：不调用 OpenAI Images API，不依赖 `OPENAI_API_KEY`，图片由 Codex 内置生图能力完成。
+辅助脚本不调用图片 API；图片由已配置的生图工具完成，其认证要求由该工具决定。
 
 ## Skill 信息
 
 - Skill 名称：`mufeng-bilingual-storybook`
-- Skill 路径：`$HOME/.codex/skills/mufeng-bilingual-storybook`
-- 主说明文件：`$HOME/.codex/skills/mufeng-bilingual-storybook/SKILL.md`
-- 辅助脚本：`$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py`
-- 流程参考：`$HOME/.codex/skills/mufeng-bilingual-storybook/references/workflow.md`
+- Skill 路径：`$SKILL_DIR`
+- 主说明文件：`$SKILL_DIR/SKILL.md`
+- 辅助脚本：`$SKILL_DIR/scripts/mufeng_storybook.py`
+- 流程参考：`$SKILL_DIR/references/workflow.md`
 
 ## 在 Codex 中调用
 
@@ -66,7 +66,7 @@ Use $mufeng-bilingual-storybook to read all markdown files and generate a biling
 ### 1. 生成分镜和图片提示词
 
 ```bash
-python "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --project-dir . \
   --output-dir build/storybook_auto \
   --scene-count auto \
@@ -79,7 +79,7 @@ python "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.
 - `build/storybook_auto/prompts.generated.md`
 - `build/storybook_auto/manifest.json`
 
-### 2. 使用 Codex 内置生图能力生成图片
+### 2. 使用当前平台已配置的生图工具生成图片
 
 打开 `prompts.generated.md`，逐个使用每页 prompt 生成图片。
 
@@ -101,7 +101,7 @@ scene_02_仙石孕育.png
 ### 3. 用已有图片生成中英文 PDF
 
 ```bash
-python "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --project-dir . \
   --output-dir build/storybook_auto \
   --scene-count auto \
@@ -119,7 +119,7 @@ python "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.
 生成 12 页：
 
 ```bash
-python "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --project-dir . \
   --output-dir build/storybook_12 \
   --scene-count 12 \
@@ -129,7 +129,7 @@ python "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.
 生成 20 页：
 
 ```bash
-python "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --project-dir . \
   --output-dir build/storybook_20 \
   --scene-count 20 \
@@ -141,7 +141,7 @@ python "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.
 如果只是检查 PDF 版式，不想先生成真实图片，可以使用 dry-run：
 
 ```bash
-python "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --project-dir . \
   --output-dir build/storybook_auto_dryrun \
   --scene-count auto \
@@ -207,7 +207,7 @@ pdftoppm -f 1 -l 1 -png -r 100 build/storybook_auto/storybook_en.pdf build/story
 ## 注意事项
 
 - 这个 skill 的脚本只处理确定性的文本、提示词、图片校验和 PDF 生成。
-- 生图步骤由 Codex 内置生图能力完成，不由脚本调用外部图片 API。
+- 生图步骤由选定生图工具完成，不由脚本调用外部图片 API。
 - 中英文 PDF 共用同一批图片，不会重复生成两套图片。
 - 如果已有 `--scene-plan`，最终页数由 JSON 条目数量决定。
 - 如果手动指定 `--scene-count 12`、`16`、`20` 或 `24`，会覆盖自动判断。

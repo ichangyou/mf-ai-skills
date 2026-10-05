@@ -1,6 +1,7 @@
 ---
 name: mufeng-uxreview
 description: 对某个页面或界面做资深 UI/UX 设计评审。读真实组件代码后，按层级、间距、文案、可供性、设计系统违规分组汇报问题并按影响排序，只给方案不改代码。触发词：UI 评审、UX 评审、设计评审、看看这个页面、这个界面有什么问题、mufeng uxreview。
+compatibility: "Codex and Claude Code. Current conversation and any task-specific source materials; subagents are optional unless the workflow requires independent execution."
 ---
 
 以资深产品设计师的身份工作。针对我指定的页面/界面：

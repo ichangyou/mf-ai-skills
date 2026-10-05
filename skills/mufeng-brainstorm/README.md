@@ -1,5 +1,27 @@
 # mufeng-brainstorm
 
+支持 Codex 和 Claude Code。安装与更新见 [项目安装文档](https://github.com/ichangyou/mf-ai-skills/blob/main/docs/installation.md)。
+
+## 调用
+
+Codex：
+
+```text
+$mufeng-brainstorm [任务或素材]
+```
+
+Claude Code：
+
+```text
+/mufeng-brainstorm [任务或素材]
+```
+
+## 依赖与执行范围
+
+当前上下文；独立反驳可使用子代理，缺少子代理时明确顺序检查。
+
+“支持”表示提供两端入口和执行说明；外部服务、账号认证及工具能力需单独配置。实际执行规则见 [SKILL.md](SKILL.md)。
+
 > 结构化头脑风暴框架 / Structured brainstorming framework
 
 ---
@@ -18,20 +40,6 @@
 | Phase B：技术选型 | 架构、框架、迁移、性能 |
 | Phase C：内容策略 | 文章、选题、公众号、传播 |
 | Phase D：项目规划 | 新项目、方向、市场、调研 |
-
-### 安装与激活
-
-本 skill 通过 Claude Code 的 Skill 系统自动发现，无需单独安装。在 Claude Code 对话中输入以下命令激活：
-
-```
-/mufeng-brainstorm [问题描述]
-```
-
-如需直接进入特定场景，可使用子 skill：
-
-- `/mufeng-brainstorm-feature` — 产品功能头脑风暴
-- `/mufeng-brainstorm-tech-stack` — 技术选型分析
-- `/mufeng-brainstorm-content` — 内容策略头脑风暴
 
 ### 使用方式
 
@@ -130,20 +138,6 @@ Supports four scenario types, auto-detected:
 | Phase B: Tech stack | architecture, framework, migration, performance |
 | Phase C: Content strategy | article, topic, WeChat, reach |
 | Phase D: Project planning | new project, direction, market, research |
-
-### Installation & Activation
-
-This skill is auto-discovered by Claude Code's Skill system. No separate installation is required. Activate in Claude Code chat:
-
-```
-/mufeng-brainstorm [problem description]
-```
-
-To jump directly into a specific scenario, use a sub-skill:
-
-- `/mufeng-brainstorm-feature` — product feature brainstorm
-- `/mufeng-brainstorm-tech-stack` — tech stack analysis
-- `/mufeng-brainstorm-content` — content strategy brainstorm
 
 ### Usage
 

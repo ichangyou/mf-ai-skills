@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """Reusable bilingual picture-book helper.
 
-This script handles deterministic parts of a Codex storybook workflow:
+This script handles deterministic parts of a Codex / Claude Code storybook workflow:
 load Markdown, consume or infer a scene plan, write prompt/manifest files,
 validate image filenames, create placeholder images for layout tests, and
 assemble Chinese/English PDFs from the same image set.
 
-It does not call image APIs. Generate art only with the Codex built-in
-image_gen tool, then rerun with --use-existing-images. Do not use Google,
-Gemini, GOOGLE_API_KEY, baoyu-image-gen, OpenAI Images API, or provider
-fallbacks for storybook artwork.
+It does not call image APIs. Use the host's selected image tool, import exact
+persisted PNGs from the configured image-output root, pass visual QA, then
+assemble PDFs. Codex's generated-images directory remains the default source.
 """
 
 from __future__ import annotations
@@ -521,7 +520,7 @@ Classic children's picture-book illustration, polished composition, expressive c
 Constraints:
 No readable text, labels, captions, speech bubbles, borders, or watermark inside the image.
 If inscriptions, plaques, tablets, scrolls, or carved stones appear, use abstract decorative marks only.
-Generation policy: use Codex built-in image_gen only; do not use Google/Gemini APIs, GOOGLE_API_KEY, baoyu-image-gen, OpenAI Images API, or any provider fallback.
+Generation policy: use the selected configured image tool; never switch providers automatically.
 """.strip()
 
 
@@ -2128,6 +2127,12 @@ def refresh_generation_plan_status(output_dir: Path) -> Dict[str, Any]:
 
 
 def generation_root() -> Path:
+    configured = os.environ.get("MUFENG_IMAGE_ROOT")
+    if configured:
+        root = Path(configured).expanduser().resolve()
+        if root == Path(root.anchor) or root == Path.home().resolve():
+            raise RuntimeError("MUFENG_IMAGE_ROOT must be a dedicated image-output directory, not a filesystem root or home directory.")
+        return root
     codex_root = Path(os.environ.get("CODEX_HOME") or (Path.home() / ".codex"))
     return (codex_root / "generated_images").resolve()
 
@@ -2236,7 +2241,7 @@ def import_generated_image(
         raise RuntimeError(f"Generated source PNG must not be a symlink: {source_input}")
     source = source_input.resolve()
     if not path_is_within(source, root):
-        raise RuntimeError(f"Source PNG is outside the Codex generated-images directory: {source}")
+        raise RuntimeError(f"Source PNG is outside the configured generated-images directory: {source}")
 
     source_valid, source_reason, source_details = inspect_png(source_input)
     if not source_valid:
@@ -2368,7 +2373,7 @@ def import_generated_candidate(
     source = source_input.resolve()
     if not path_is_within(source, root):
         raise RuntimeError(
-            f"Candidate source PNG is outside the Codex generated-images directory: {source}"
+            f"Candidate source PNG is outside the configured generated-images directory: {source}"
         )
     source_valid, source_reason, source_details = inspect_png(source_input)
     if not source_valid:
@@ -2394,7 +2399,7 @@ def import_generated_candidate(
         "task_id": task_id,
         "candidate_sha256": digest,
         "verdict": "needs_review",
-        "reviewer": "codex-vision",
+        "reviewer": "pending-reviewer",
         "checks": [
             {"id": check_id, "result": "pending", "detail": ""}
             for check_id in qa_required_check_ids(scene)
@@ -2699,7 +2704,7 @@ def archive_rejected_attempt(
     source = source_input.resolve()
     if not path_is_within(source, root):
         raise RuntimeError(
-            f"Rejected source PNG is outside the Codex generated-images directory: {source}"
+            f"Rejected source PNG is outside the configured generated-images directory: {source}"
         )
     source_valid, source_reason, source_details = inspect_png(source_input)
     if not source_valid:
@@ -3266,9 +3271,10 @@ def write_outputs(
     output_dir.mkdir(parents=True, exist_ok=True)
     lines = ["# Parsed Scenes", ""]
     image_policy = (
-        "Use Codex built-in image_gen only. Do not use Google/Gemini APIs, "
-        "GOOGLE_API_KEY, baoyu-image-gen, OpenAI Images API, SDK clients, "
-        "or provider fallbacks."
+        "Prefer Codex built-in image_gen when available; otherwise use an explicitly "
+        "configured image tool. Never switch providers automatically. Import exact "
+        "call-scoped PNGs from the configured image-output directory into this project "
+        "and pass visual QA before PDF assembly."
     )
     prompt_lines = [
         "# Generated Image Prompts",

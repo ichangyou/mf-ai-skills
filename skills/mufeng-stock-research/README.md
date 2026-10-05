@@ -1,4 +1,28 @@
-# Stock Research & Market Analysis
+# mufeng-stock-research
+
+支持 Codex 和 Claude Code。安装与更新见 [项目安装文档](https://github.com/ichangyou/mf-ai-skills/blob/main/docs/installation.md)。
+
+## 调用
+
+Codex：
+
+```text
+$mufeng-stock-research [任务或素材]
+```
+
+Claude Code：
+
+```text
+/mufeng-stock-research [任务或素材]
+```
+
+## 依赖与执行范围
+
+网络检索；Financial Datasets MCP 可选。导出需要 Pandoc，PDF 还需要 Chrome/Chromium。
+
+“支持”表示提供两端入口和执行说明；外部服务、账号认证及工具能力需单独配置。实际执行规则见 [SKILL.md](SKILL.md)。
+
+运行脚本前，将 shell 变量 `SKILL_DIR` 设为实际安装目录（包含本文件和 `SKILL.md` 的目录）。相对资源路径均以该目录为准。
 
 Generate a professional institutional-style equity research report by simply entering a company name.
 

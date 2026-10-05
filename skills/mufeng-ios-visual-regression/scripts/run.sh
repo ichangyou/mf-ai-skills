@@ -24,10 +24,10 @@ case "$cmd" in
     if [ -f "$VRDIR/config.json" ]; then
       echo "config exists: $VRDIR/config.json (left untouched)"
     else
-      cp "$HERE/templates/config.template.json" "$VRDIR/config.json"
+      cp "$HERE/../assets/templates/config.template.json" "$VRDIR/config.json"
       echo "wrote  $VRDIR/config.json  (edit: scheme, workspace, bundle_id, source_dir, screens)"
     fi
-    cp "$HERE/templates/VisualRegressionHarness.swift.template" \
+    cp "$HERE/../assets/templates/VisualRegressionHarness.swift.template" \
        "$VRDIR/VisualRegressionHarness.swift.template"
     echo "wrote  $VRDIR/VisualRegressionHarness.swift.template  (move into your app + fill registry)"
     if [ -f "$PROJECT/.gitignore" ] && ! grep -q "^VisualRegression/current" "$PROJECT/.gitignore"; then

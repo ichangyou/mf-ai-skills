@@ -1,5 +1,29 @@
 # mufeng-wechat-publish-full
 
+支持 Codex 和 Claude Code。安装与更新见 [项目安装文档](https://github.com/ichangyou/mf-ai-skills/blob/main/docs/installation.md)。
+
+## 调用
+
+Codex：
+
+```text
+$mufeng-wechat-publish-full [任务或素材]
+```
+
+Claude Code：
+
+```text
+/mufeng-wechat-publish-full [任务或素材]
+```
+
+## 依赖与执行范围
+
+已认证 gh；生图需要已配置工具；发布需要 Bun、baoyu-post-to-wechat 和公众号凭据。
+
+“支持”表示提供两端入口和执行说明；外部服务、账号认证及工具能力需单独配置。实际执行规则见 [SKILL.md](SKILL.md)。
+
+运行脚本前，将 shell 变量 `SKILL_DIR` 设为实际安装目录（包含本文件和 `SKILL.md` 的目录）。相对资源路径均以该目录为准。
+
 面向微信公众号的完整发布工作流 skill。它覆盖从文章策略、Markdown 元数据、封面和配图、GitHub 图床上传，到微信 API 发布和 HTML 兜底发布的全过程。
 
 `SKILL.md` 是给 agent 执行时读取的详细规则；本 README 是给人快速理解和维护用的入口说明。
@@ -81,7 +105,7 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/a
 推荐用内置 helper 上传 PNG 图片：
 
 ```bash
-python3 "$HOME/.agents/skills/mufeng-wechat-publish-full/scripts/upload_github_images.py" \
+python3 "$SKILL_DIR/scripts/upload_github_images.py" \
   --repo "mf-blog/blogPictures" \
   --branch "main" \
   --remote-dir "images/<article-slug>" \
@@ -101,10 +125,12 @@ python3 "$HOME/.agents/skills/mufeng-wechat-publish-full/scripts/upload_github_i
 
 ## Markdown 直发微信
 
+先按 [平台配置](references/platforms.md) 设置实际发布脚本与凭据。
+
 优先使用 Markdown 发布路径：
 
 ```bash
-bun ~/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
+bun "$MUFENG_WECHAT_SCRIPT" \
   <article.md> \
   --theme default \
   --author changyou \

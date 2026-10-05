@@ -1,9 +1,14 @@
 ---
 name: mufeng-brainstorm
 description: Use when starting a new project, exploring a product feature, evaluating technical directions, or planning content strategy - especially in early research phase where options are unclear and structured divergent thinking is needed before committing to a path.
+compatibility: "Codex and Claude Code. Current conversation and any task-specific source materials; subagents are optional unless the workflow requires independent execution."
 ---
 
 # Mufeng Brainstorm
+
+## Codex / Claude Code 执行方式
+
+使用当前环境实际提供的子代理能力（Codex 的子代理工具或 Claude Code 的 Agent 工具），不硬编码工具名或代理数量上限。按环境并发限制分批执行。子代理不可用时可顺序完成各视角/假设检查，并明确标记“顺序检查”，不得声称进行了独立或并行验证。
 
 ## Overview
 

@@ -1,9 +1,19 @@
 ---
 name: mufeng-materials-to-wechat-publish
 description: Use when source materials in a directory, such as notes, drafts, transcripts, screenshots, outlines, or code snippets, need to be turned into a professional evidence-rich WeChat Official Account article with mufeng-blog-writing, current WeChat search-intent research, natural keyword mapping, SEO/GEO-friendly Markdown metadata, content-quality gates, real screenshots when available, generated PNG cover and inline illustrations, GitHub-hosted raw image URLs, and WeChat publishing. Do not use for an already-finished article that only needs publishing; use mufeng-wechat-publish-full for that.
+compatibility: "Codex and Claude Code. Web search, mufeng-blog-writing, an image tool, gh authentication and a configured WeChat publisher."
 ---
 
 # Mufeng Materials To WeChat Publish
+
+## Resource Paths
+
+Set the shell variable `SKILL_DIR` to the directory containing the **loaded** `SKILL.md` before running the commands below. Resolve supporting paths from that directory, not the working directory or a fixed user/platform installation path. `$SKILL_DIR` is a shell variable you set, not a host-provided macro.
+
+
+## Platform Dependencies
+
+Read [references/platforms.md](references/platforms.md) before generating images or publishing. Set `MUFENG_WECHAT_SCRIPT` to the actual `wechat-api.ts` path from an installed `baoyu-post-to-wechat` skill, or use a documented publisher already configured in the host. The variable does not install the publisher. If the dependency or credentials are missing, finish the local article and report that publishing was not executed.
 
 ## Core Rules
 
@@ -18,7 +28,7 @@ description: Use when source materials in a directory, such as notes, drafts, tr
 - Every generated or substantially revised article must pass the evidence and authenticity gate: real screenshots when available, personal experience, at least one failure/lesson, and 2-3 authoritative sources.
 - Before publishing, pass the originality, account-fit, title-integrity, and low-quality-content gates. Revise failures; stop before publishing when a material failure cannot be fixed from available evidence.
 - Every generated Markdown article must be Emoji-free. Do not add any AI-assist, AI-generated, or model-use declaration to the article body or footer.
-- Use Codex built-in image generation only for new cover and illustration images. Do not call OpenAI Images API, `baoyu-image-gen`, Google, DashScope, or other image CLIs unless the user explicitly asks to switch.
+- Prefer Codex built-in image generation when available. On Claude Code, use an explicitly configured image skill/tool; do not silently select a provider. If none is available, save the article and report the missing image dependency. Immediately copy every adopted image into the project, verify the copy, and only then upload it.
 - Do not use generated images as replacements for real screenshots. Real screenshots are evidence assets; never fabricate Codex, Claude, revenue, analytics, or project UI screenshots.
 - Default generated visuals to a restrained, article-specific technical-editorial direction. Do not default to neon gradients, glowing networks, floating interfaces, glossy 3D objects, robots, brains, circuit heads, or other recognizable generative-AI clichés.
 - Save generated images as PNG. If a generated asset is not PNG, convert it to PNG before upload.
@@ -297,7 +307,7 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/s
    - Use the bundled helper:
 
 ```bash
-python3 "$HOME/.agents/skills/mufeng-materials-to-wechat-publish/scripts/upload_github_images.py" \
+python3 "$SKILL_DIR/scripts/upload_github_images.py" \
   --repo "mf-blog/blogPictures" \
   --branch "main" \
   --remote-dir "images/<article-slug>" \
@@ -337,7 +347,7 @@ python3 "$HOME/.agents/skills/mufeng-materials-to-wechat-publish/scripts/upload_
    - Use the existing baoyu script directly:
 
 ```bash
-bun /Users/changyou/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
+bun "$MUFENG_WECHAT_SCRIPT" \
   <article.md> \
   --theme default \
   --author changyou \

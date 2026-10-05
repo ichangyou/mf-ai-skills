@@ -1,27 +1,33 @@
 ---
 name: mufeng-weread-x-writing
 description: 从用户的微信读书划线、笔记、想法、评论和阅读记录中提炼原创中文 X/Twitter 推文，并结合本地历史记录执行最近 7/30 天语义去重。适用于“根据我的微信读书生成推文”“从长期阅读中找可分享观点”及类似请求；不用于普通书摘汇总或整本书摘要。
+compatibility: "Codex and Claude Code. Python 3.10+; configured WeRead tools or user-provided reading exports."
 ---
 
 # 沐风·微信读书推文
+
+## Resource Paths
+
+Set the shell variable `SKILL_DIR` to the directory containing the **loaded** `SKILL.md` before running the commands below. Resolve supporting paths from that directory, not the working directory or a fixed user/platform installation path. `$SKILL_DIR` is a shell variable you set, not a host-provided macro.
+
 
 从真实阅读痕迹中发现值得公开分享的思想，改写成克制、有个人判断、可以直接发布的中文推文。目标是延续用户的认知轨迹，不是总结一本书。
 
 ## 依赖与边界
 
-- 先读取并遵守 `/Users/changyou/.agents/skills/weread-skills/SKILL.md`。调用某项微信读书能力前，再读取其中指定的能力文档。
+- 从当前环境已安装的 skills 中定位 `weread-skills`，读取它实际路径下的 `SKILL.md` 和对应能力文档；也可使用用户已配置且有文档的微信读书 MCP。没有账号工具时，直接处理用户提供的真实导出材料。下列接口是原 `weread-skills` 的接口示例，不应猜测 MCP 工具名称或认证方式。
 - 只依据接口返回、历史文件和当前上下文。不得虚构用户经历、批注、出处、作者、原文或发布时间。
 - 微信读书不可用时，明确说明缺少什么；可以处理用户提供的导出文件，但不要假装已读取账号数据。
 - 默认只生成候选稿并写入本地历史，不自动发布到 X，也不把“已生成”标记为“已发布”。
 
 ## 本地历史
 
-历史默认存放在 `~/.codex/mufeng-weread-x/history.jsonl`。使用：
+新历史默认存放在 `~/.local/share/mf-ai-skills/weread-x/history.jsonl`。已有旧版 `~/.codex/mufeng-weread-x/history.jsonl` 且新位置不存在时，继续使用旧文件，避免丢失去重记录。两端共用同一份历史；可通过 `MUFENG_WEREAD_X_HOME` 指定历史目录。使用：
 
 ```bash
-python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/history.py init
-python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/history.py recent --days 30
-python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/history.py stats --days 30
+python3 $SKILL_DIR/scripts/history.py init
+python3 $SKILL_DIR/scripts/history.py recent --days 30
+python3 $SKILL_DIR/scripts/history.py stats --days 30
 ```
 
 如果用户指定了其他历史文件或目录，优先使用用户位置；可通过 `--history PATH` 传入。读写格式见 [references/memory-and-output.md](references/memory-and-output.md)。
@@ -127,10 +133,10 @@ python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/history.p
 
 ```bash
 # 正文从标准输入传入，脚本负责加文件头并选路径
-python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/save_output.py --count 6 < body.md
+python3 $SKILL_DIR/scripts/save_output.py --count 6 < body.md
 
 # 只想知道会落到哪里，不写文件
-python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/save_output.py --dry-run
+python3 $SKILL_DIR/scripts/save_output.py --dry-run
 ```
 
 脚本回包为 JSON：`path` 是绝对路径，`dir_kind` 为 `project` 或 `root`，`written` 表示是否真的写了文件。终端那行「已保存到 …」直接用 `path`。
@@ -150,7 +156,7 @@ python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/save_outp
 
 **写盘失败**时照常输出全文，并明确说明未保存及原因，不要静默跳过。
 
-> 本条覆盖全局 CLAUDE.md 中“分析/规划文档默认存到 `~/Desktop`”的约定。本 skill 的产物按上面的目录判定走；用户本轮另行指定路径时，以用户指定的为准。
+> 两端均按上面的目录规则保存。用户本轮另行指定路径时，以用户指定的为准。
 
 #### 写入历史
 

@@ -1,6 +1,7 @@
 ---
 name: mufeng-ios-release-audit
 description: iOS App Store 上线前完整发布审计。逐项核验权限文案、托管 EULA/条款 URL 及违禁内容条款、硬编码价格、.lproj 本地化完整性、App 图标、版本号与 build 号、数据层强制解包、零编译警告、多语言商店元数据，并产出微信/X/Reddit 上线文案。触发词：iOS 要上线了、上线前检查、提交 App Store、会不会被拒、审核会过吗、iOS release 检查、发版前审查、iOS 发布审计、iOS release audit、生成上线文案。仅限 iOS/App Store 项目。
+compatibility: "Codex and Claude Code. An iOS project; macOS and Xcode for build verification."
 ---
 
 # iOS App Store 完整发布审计

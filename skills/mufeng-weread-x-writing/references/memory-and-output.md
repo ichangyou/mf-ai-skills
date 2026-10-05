@@ -31,13 +31,13 @@
 写入一条记录：
 
 ```bash
-python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/history.py add --json '{"text":"...","insight":"...","topics":["学习"]}'
+python3 $SKILL_DIR/scripts/history.py add --json '{"text":"...","insight":"...","topics":["学习"]}'
 ```
 
 也可以从标准输入传入单个对象或对象数组：
 
 ```bash
-python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/history.py add < records.json
+python3 $SKILL_DIR/scripts/history.py add < records.json
 ```
 
 ## 语义去重对象
@@ -88,7 +88,7 @@ python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/history.p
 每轮结果除了在终端展示，还要另存一份 Markdown 文件。落盘一律走 `scripts/save_output.py`：
 
 ```bash
-python3 /Users/changyou/.agents/skills/mufeng-weread-x-writing/scripts/save_output.py --count 6 < body.md
+python3 $SKILL_DIR/scripts/save_output.py --count 6 < body.md
 ```
 
 标准输入接收正文区（编号推文 + 来源元信息 + 今日最值得发布的 2 条），脚本补文件头、选目录、防覆盖，回包 JSON 里的 `path` 就是终端要报的绝对路径。下面几节是脚本已实现的规则，供理解与核对，不需要手工复刻。

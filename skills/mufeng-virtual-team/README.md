@@ -1,5 +1,27 @@
 # mufeng-virtual-team
 
+支持 Codex 和 Claude Code。安装与更新见 [项目安装文档](https://github.com/ichangyou/mf-ai-skills/blob/main/docs/installation.md)。
+
+## 调用
+
+Codex：
+
+```text
+$mufeng-virtual-team [任务或素材]
+```
+
+Claude Code：
+
+```text
+/mufeng-virtual-team [任务或素材]
+```
+
+## 依赖与执行范围
+
+功能描述和项目背景；三个角色默认由主代理依次分析。
+
+“支持”表示提供两端入口和执行说明；外部服务、账号认证及工具能力需单独配置。实际执行规则见 [SKILL.md](SKILL.md)。
+
 一个 Agent Skill：让 AI 依次扮演 **CTO、产品经理、普通用户** 三个角色，评审同一个产品功能是否值得做，最后给出综合裁决（做 / 缩减后做 / 不做）和最小实现方案。
 
 适合独立开发者——一个人做产品最缺的不是执行力，而是视角。这个 skill 让你在写第一行代码之前，先借三双眼睛看问题：

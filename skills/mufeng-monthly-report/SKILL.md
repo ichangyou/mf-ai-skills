@@ -1,6 +1,7 @@
 ---
 name: mufeng-monthly-report
 description: Use when the user wants to write a monthly summary, review the past month's work, or generate a monthly report based on recent conversations.
+compatibility: "Codex and Claude Code. Current conversation or user-provided monthly records; older sessions require an explicitly available data source."
 ---
 
 # 沐风月报生成器
@@ -9,18 +10,22 @@ description: Use when the user wants to write a monthly summary, review the past
 
 根据过去一个月的对话记录，自动生成结构化月报，并给出月度亮点分析、数据总结与下月方向建议。
 
+## 数据范围与双平台支持
+
+Codex 和 Claude Code 均使用当前可见对话、用户提供的日志/导出文件，或用户已配置的数据读取工具。不能默认访问其他会话。先说明本月实际覆盖的日期和材料；材料不足时输出部分复盘并列出缺口，不编造缺失记录。
+
 ## Process
 
 ### Step 1：确定月度周期
 
 计算本次月报所属的自然月，格式为：
-`2026年XX月 - Claude月报（MM.01 - MM.DD）`
+`2026年XX月 - AI月报（MM.01 - MM.DD）`
 
 使用今天的日期确定当月的起止日期（1日到最后一天）。
 
 ### Step 2：回顾对话，提取信息
 
-通读本月所有 session 的对话内容，识别并归类以下信息。月报要求比周报更加深入，需要总结趋势和规律：
+通读本月实际可访问的对话和用户提供的记录，识别并归类以下信息。月报要求比周报更加深入，需要总结趋势和规律：
 
 | 类别 | 关键词/信号 | 月报关注点 |
 |------|------------|----------|
@@ -39,7 +44,7 @@ description: Use when the user wants to write a monthly summary, review the past
 严格按照以下模板输出，每个 emoji 和格式都要保留：
 
 ```
-📅 2026年XX月 - Claude月报（MM.01 - MM.DD）
+📅 2026年XX月 - AI月报（MM.01 - MM.DD）
 
 🏆 本月最重要的 3 件事：
 1. [动词开头，简洁有力]

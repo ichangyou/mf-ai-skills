@@ -1,6 +1,7 @@
 ---
 name: mufeng-blog-writing
 description: Chinese technical blog writing for mufeng.blog with Joey's tone, clear problem-solution structure, runnable code examples, and publish-ready SEO metadata. Use when drafting or revising technical posts, tutorials, or troubleshooting articles, especially for iOS (Swift/Objective-C), Java/Spring Boot, Vue.js, or JavaScript/TypeScript.
+compatibility: "Codex and Claude Code. Current conversation and any task-specific source materials; subagents are optional unless the workflow requires independent execution."
 ---
 
 # mufeng-blog-writing
@@ -30,7 +31,7 @@ For an article whose subject is a technical thing (tool, framework, API, protoco
 7. 痛点与解决方法 — paired in the same section, plus what the fix does not solve.
 8. 不要有废话 — delete any paragraph that costs the reader no information, judgment, or step; no `随着 XX 的发展` openers, standalone transition paragraphs, verbatim restated conclusions, or unearned adjectives.
 
-Full rules, including the enforcing quality gates and checklist: `~/.agents/skills/mufeng-materials-to-wechat-publish/SKILL.md`, sections `Technical Explainer Contract` and `No-Filler Rules`.
+Check each claim against source material or an actual experiment. Do not invent personal experience, sources, or results. Remove filler and repeated conclusions before saving.
 
 ## Output Format
 - Return Markdown only.

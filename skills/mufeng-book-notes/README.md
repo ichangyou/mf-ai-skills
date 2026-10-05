@@ -1,5 +1,27 @@
 # mufeng-book-notes
 
+支持 Codex 和 Claude Code。安装与更新见 [项目安装文档](https://github.com/ichangyou/mf-ai-skills/blob/main/docs/installation.md)。
+
+## 调用
+
+Codex：
+
+```text
+$mufeng-book-notes [任务或素材]
+```
+
+Claude Code：
+
+```text
+/mufeng-book-notes [任务或素材]
+```
+
+## 依赖与执行范围
+
+用户提供的真实摘录或读书材料。
+
+“支持”表示提供两端入口和执行说明；外部服务、账号认证及工具能力需单独配置。实际执行规则见 [SKILL.md](SKILL.md)。
+
 > 沐风读书笔记生成器 / Book notes generator for Joey (沐风)
 
 ---
@@ -11,16 +33,6 @@
 沐风专属读书笔记生成器。基于用户提供的书籍内容、摘录或原文片段，生成一篇高质量、可落地、能指导行动的读书笔记。
 
 **核心原则**：笔记不是摘要，不是复述，而是「写给未来自己的理解记录」。风格真实克制，不鸡汤，不口号。核心筛选标准是——这个观点能不能改变我的判断和行动。
-
-### 安装与激活
-
-本 skill 通过 Claude Code 的 Skill 系统自动发现，无需单独安装。在 Claude Code 对话中输入以下命令激活：
-
-```
-/mufeng-book-notes
-```
-
-也支持以下关键词自动触发：`读书笔记`、`书评`、`读后感`、`帮我总结这本书`
 
 ### 使用方式
 
@@ -56,7 +68,7 @@
 | 六、我应该避免什么 | 具体行为模式警示 |
 | 七、一句话总结 | 写给未来自己的提醒 |
 
-落款：系统时间（自动获取）+ 地点 + AI 辅助声明
+落款按 [SKILL.md](SKILL.md) 的当前规则填写。
 
 ### 注意事项
 
@@ -74,16 +86,6 @@
 Joey's personal book notes generator. Given book content, excerpts, or raw text provided by the user, it produces high-quality, actionable book notes.
 
 **Core principle**: These notes are not a summary or retelling — they are a "record of understanding written for your future self." Style is honest and restrained: no empty inspiration, no slogans. The core filter is whether a point can change your judgment or actions.
-
-### Installation & Activation
-
-This skill is auto-discovered by Claude Code's Skill system. No separate installation is required. Activate in Claude Code chat:
-
-```
-/mufeng-book-notes
-```
-
-Also triggered automatically by keywords: `读书笔记`, `书评`, `读后感`, `帮我总结这本书`
 
 ### Usage
 

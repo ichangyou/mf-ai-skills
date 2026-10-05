@@ -1,5 +1,27 @@
 # mufeng-weekly-report
 
+支持 Codex 和 Claude Code。安装与更新见 [项目安装文档](https://github.com/ichangyou/mf-ai-skills/blob/main/docs/installation.md)。
+
+## 调用
+
+Codex：
+
+```text
+$mufeng-weekly-report [任务或素材]
+```
+
+Claude Code：
+
+```text
+/mufeng-weekly-report [任务或素材]
+```
+
+## 依赖与执行范围
+
+当前可见对话或用户提供的周记录；不会默认读取其他会话。
+
+“支持”表示提供两端入口和执行说明；外部服务、账号认证及工具能力需单独配置。实际执行规则见 [SKILL.md](SKILL.md)。
+
 > 沐风周报生成器 / Weekly report generator for Joey (沐风)
 
 ---
@@ -10,17 +32,9 @@
 
 根据本周的对话记录自动生成结构化周报，包含六大类别记录和亮点分析与改进建议。周期为自然周（周一至周日），格式统一，风格真实坦诚。
 
-### 安装与激活
-
-本 skill 通过 Claude Code 的 Skill 系统自动发现，无需单独安装。在 Claude Code 对话中输入以下命令激活：
-
-```
-/mufeng-weekly-report
-```
-
 ### 使用方式
 
-无需额外参数。skill 自动从当前及近期 session 的对话内容中提取信息：
+无需额外参数。skill 从当前可见对话及用户提供的记录中提取信息：
 
 ```
 /mufeng-weekly-report
@@ -47,7 +61,7 @@
 ### 输出格式
 
 ```
-📅 2026年第XX周 - Claude周报（MM.DD - MM.DD）
+📅 2026年第XX周 - AI周报（MM.DD - MM.DD）
 
 ✅ 本周最关键任务：
 [1-3件，动词开头，简洁有力]
@@ -90,14 +104,6 @@
 ### Description
 
 Automatically generates a structured weekly summary from the current week's conversation history. Covers six topic categories plus highlights analysis and improvement suggestions. Covers the natural week (Monday to Sunday) with a consistent format and honest tone.
-
-### Installation & Activation
-
-This skill is auto-discovered by Claude Code's Skill system. No separate installation is required. Activate in Claude Code chat:
-
-```
-/mufeng-weekly-report
-```
 
 ### Usage
 

@@ -1,5 +1,27 @@
 # mufeng-dankoe-writing
 
+支持 Codex 和 Claude Code。安装与更新见 [项目安装文档](https://github.com/ichangyou/mf-ai-skills/blob/main/docs/installation.md)。
+
+## 调用
+
+Codex：
+
+```text
+$mufeng-dankoe-writing [任务或素材]
+```
+
+Claude Code：
+
+```text
+/mufeng-dankoe-writing [任务或素材]
+```
+
+## 依赖与执行范围
+
+当前对话和写作素材。
+
+“支持”表示提供两端入口和执行说明；外部服务、账号认证及工具能力需单独配置。实际执行规则见 [SKILL.md](SKILL.md)。
+
 > Dan Koe 风格深度长篇写作 / Deep long-form writing in Dan Koe's style
 
 ---
@@ -15,24 +37,6 @@
 - **理论 + 实践**：前半部分深入理论/心理学/哲学，后半给出可执行步骤
 - **反主流叙事**：提供「你可能没听过」的独特视角
 - **节奏变化**：长句阐述 + 短句冲击，关键点单独成段
-
-### 安装与激活
-
-本 skill 通过 Claude Code / Codex 的 Skill 系统自动发现，无需单独安装。
-
-**Claude Code 中激活**：
-
-```
-/mufeng-dankoe-writing [话题]
-```
-
-**Codex 中激活**：
-
-```
-请使用 mufeng-dankoe-writing 写作风格，写一篇关于……的长文
-```
-
-也支持以下关键词自动触发：`长篇文章`、`深度写作`、`Dan Koe 风格`、`挑衅性写作`、`思想领袖内容`、`系统化框架文章`
 
 ### 使用方式
 
@@ -103,24 +107,6 @@ A deep long-form writing style guide modeled after Dan Koe's writing. Designed f
 - **Theory + practice**: First half dives into theory / psychology / philosophy; second half gives actionable steps
 - **Counter-mainstream narrative**: Provides perspectives "you probably haven't heard"
 - **Rhythm variation**: Long explanatory sentences + short punchy ones; key points get their own paragraph
-
-### Installation & Activation
-
-This skill is auto-discovered by Claude Code / Codex's Skill system. No separate installation is required.
-
-**Activate in Claude Code**:
-
-```
-/mufeng-dankoe-writing [topic]
-```
-
-**Activate in Codex**:
-
-```
-Please use the mufeng-dankoe-writing style to write a long-form article about...
-```
-
-Also triggered automatically by keywords: `长篇文章` (long-form article), `深度写作` (deep writing), `Dan Koe 风格`, `挑衅性写作` (provocative writing), `思想领袖内容` (thought leader content), `系统化框架文章` (systematic framework article)
 
 ### Usage
 

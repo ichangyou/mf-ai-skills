@@ -1,6 +1,7 @@
 ---
 name: mufeng-weekly-report
 description: Use when the user wants to write a weekly summary, review the past week's work, or generate a weekly report based on recent conversations.
+compatibility: "Codex and Claude Code. Current conversation or user-provided weekly records; older sessions require an explicitly available data source."
 ---
 
 # 沐风周报生成器
@@ -9,18 +10,22 @@ description: Use when the user wants to write a weekly summary, review the past 
 
 根据过去一周的对话记录，自动生成结构化周报，并给出亮点分析与改进建议。
 
+## 数据范围与双平台支持
+
+Codex 和 Claude Code 均使用当前可见对话、用户提供的日志/导出文件，或用户已配置的数据读取工具。不能默认访问其他会话。先说明本周实际覆盖的日期和材料；材料不足时输出部分复盘并列出缺口，不编造缺失记录。
+
 ## Process
 
 ### Step 1：确定周期
 
 计算本次周报所属的自然周（周一到周日），格式为：
-`2026年第XX周 - Claude周报（MM.DD - MM.DD）`
+`2026年第XX周 - AI周报（MM.DD - MM.DD）`
 
 使用今天的日期往前推，确定本周的起止日期。
 
 ### Step 2：回顾对话，提取信息
 
-通读本次 session 以及近期 session 的对话内容，识别并归类以下信息：
+通读当前可见对话和用户提供的近期记录，识别并归类以下信息：
 
 | 类别 | 关键词/信号 |
 |------|------------|
@@ -38,7 +43,7 @@ description: Use when the user wants to write a weekly summary, review the past 
 严格按照以下模板输出，每个 emoji 和格式都要保留：
 
 ```
-📅 2026年第XX周 - Claude周报（MM.DD - MM.DD）
+📅 2026年第XX周 - AI周报（MM.DD - MM.DD）
 
 ✅ 本周最关键任务：
 [列出 1-3 件本周最重要的事，用动词开头，简洁有力]

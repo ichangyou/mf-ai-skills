@@ -1,6 +1,7 @@
 ---
 name: mufeng-book-notes
 description: 沐风读书笔记生成器。当用户提供书籍内容、摘录或读书材料，需要生成高质量、可落地、能指导行动的读书笔记时调用。笔记风格真实克制、有密度、不鸡汤，围绕「能否改变判断和行动」筛选内容。触发词：读书笔记、书评、读后感、帮我总结这本书、mufeng 读书笔记。
+compatibility: "Codex and Claude Code. Current conversation and any task-specific source materials; subagents are optional unless the workflow requires independent execution."
 ---
 
 # mufeng-book-notes

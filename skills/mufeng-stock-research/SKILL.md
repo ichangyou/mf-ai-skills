@@ -1,14 +1,20 @@
 ---
 name: mufeng-stock-research
 description: "Educational stock research skill for market analysis and financial study. Works standalone via web search, or enhanced with Financial Datasets MCP for real-time structured data. Runs 8 analyses (fundamentals, risk, DCF, peer comparison, catalysts, technical, sentiment, research summary) and exports to PDF + HTML (default) or Word. Supports English (default) and Chinese."
-when_to_use: "stock analysis, stock research, market research, 股票研究, 股票分析, 市场研究, fundamental analysis, DCF valuation, company research, analyze [company], research [company]"
 metadata:
   version: "1.0.0"
+  trigger_keywords: "stock analysis, stock research, market research, 股票研究, 股票分析, 市场研究, fundamental analysis, DCF valuation, company research, analyze [company], research [company]"
+compatibility: "Codex and Claude Code. Web search; optional Financial Datasets MCP; Pandoc and Chrome/Chromium for report export."
 ---
 
 > **Disclaimer:** This skill is for educational research and informational purposes only. It does not constitute professional financial advice. Users should consult a licensed financial advisor before making any financial decisions. All analytical conclusions include uncertainty caveats. This skill will not use language expressing certainty such as "guaranteed", "definitely", or "sure profit", and will not provide investment-action judgments for specific assets.
 
 # Stock Research & Market Analysis
+
+## Resource Paths
+
+Set the shell variable `SKILL_DIR` to the directory containing the **loaded** `SKILL.md` before running the commands below. Resolve supporting paths from that directory, not the working directory or a fixed user/platform installation path. `$SKILL_DIR` is a shell variable you set, not a host-provided macro.
+
 
 Fetch live data from Financial Datasets MCP (where available), supplement with web search, run 8 structured analyses, and compile a professional research report for educational purposes.
 

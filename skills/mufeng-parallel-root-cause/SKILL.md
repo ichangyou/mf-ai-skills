@@ -1,20 +1,26 @@
 ---
 name: mufeng-parallel-root-cause
-description: Use when a bug investigation has stalled — two or more leads already
+description: >-
+  Use when a bug investigation has stalled — two or more leads already
   died, the failure spans multiple layers (app code / config / third-party service /
   OS / local toolchain), or symptoms contradict the obvious explanation. Triggers:
   硬 bug、根因不明、调查卡住、死路、又是环境问题？、proxy/SDK/上游 分不清。
   Not for first-look debugging or bugs with a clear stack trace.
+compatibility: "Codex and Claude Code. Current conversation and any task-specific source materials; subagents are optional unless the workflow requires independent execution."
 ---
 
 # 并行证伪式根因调查
+
+## Codex / Claude Code 执行方式
+
+使用当前环境实际提供的子代理能力（Codex 的子代理工具或 Claude Code 的 Agent 工具），不硬编码工具名或代理数量上限。按环境并发限制分批执行。子代理不可用时可顺序完成各视角/假设检查，并明确标记“顺序检查”，不得声称进行了独立或并行验证。
 
 ## 核心原则
 不是并行地找证据支持某个猜想，而是并行地**杀死**猜想。
 每个子代理的任务是证伪自己的假设；活到最后的假设才配谈修复。
 
 ## 何时不用
-- 第一次看这个 bug（先按 CLAUDE.md 调试规则线性复现）
+- 第一次看这个 bug（先按目标项目实际加载的 AGENTS.md / CLAUDE.md 调试规则线性复现）
 - stack trace 直接指向一个文件
 - 只是想确认一个已有的强假设（一条 curl 就够）
 

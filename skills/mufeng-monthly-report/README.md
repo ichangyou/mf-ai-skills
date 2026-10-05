@@ -1,5 +1,27 @@
 # mufeng-monthly-report
 
+支持 Codex 和 Claude Code。安装与更新见 [项目安装文档](https://github.com/ichangyou/mf-ai-skills/blob/main/docs/installation.md)。
+
+## 调用
+
+Codex：
+
+```text
+$mufeng-monthly-report [任务或素材]
+```
+
+Claude Code：
+
+```text
+/mufeng-monthly-report [任务或素材]
+```
+
+## 依赖与执行范围
+
+当前可见对话或用户提供的月记录；不会默认读取其他会话。
+
+“支持”表示提供两端入口和执行说明；外部服务、账号认证及工具能力需单独配置。实际执行规则见 [SKILL.md](SKILL.md)。
+
 > 沐风月报生成器 / Monthly report generator for Joey (沐风)
 
 ---
@@ -9,14 +31,6 @@
 ### 功能描述
 
 根据过去一个月的对话记录自动生成结构化月报。比周报更注重**趋势和规律的提炼**，含七大类别记录、月度深度分析（规律与趋势）、下月行动建议和展望。
-
-### 安装与激活
-
-本 skill 通过 Claude Code 的 Skill 系统自动发现，无需单独安装。在 Claude Code 对话中输入以下命令激活：
-
-```
-/mufeng-monthly-report
-```
 
 ### 使用方式
 
@@ -56,7 +70,7 @@
 ### 输出格式
 
 ```
-📅 2026年XX月 - Claude月报（MM.01 - MM.DD）
+📅 2026年XX月 - AI月报（MM.01 - MM.DD）
 
 🏆 本月最重要的 3 件事：
 1. [动词开头，简洁有力]
@@ -94,14 +108,6 @@
 ### Description
 
 Automatically generates a structured monthly summary from the past month's conversations. More focused on **trend and pattern extraction** than the weekly report. Includes seven topic categories, in-depth monthly analysis (patterns and trends), next-month action recommendations, and an outlook.
-
-### Installation & Activation
-
-This skill is auto-discovered by Claude Code's Skill system. No separate installation is required. Activate in Claude Code chat:
-
-```
-/mufeng-monthly-report
-```
 
 ### Usage
 

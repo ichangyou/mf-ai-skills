@@ -22,3 +22,10 @@ Gemfile.lock
 
 # macOS
 .DS_Store
+
+# Development environments, caches, runtime state and reproducible packages
+.venv/
+__pycache__/
+*.pyc
+skills/**/.temp/
+dist/

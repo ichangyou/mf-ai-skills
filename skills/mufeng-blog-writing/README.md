@@ -1,5 +1,27 @@
 # mufeng-blog-writing
 
+支持 Codex 和 Claude Code。安装与更新见 [项目安装文档](https://github.com/ichangyou/mf-ai-skills/blob/main/docs/installation.md)。
+
+## 调用
+
+Codex：
+
+```text
+$mufeng-blog-writing [任务或素材]
+```
+
+Claude Code：
+
+```text
+/mufeng-blog-writing [任务或素材]
+```
+
+## 依赖与执行范围
+
+当前对话和文章素材；需要核实技术事实时使用网络检索。
+
+“支持”表示提供两端入口和执行说明；外部服务、账号认证及工具能力需单独配置。实际执行规则见 [SKILL.md](SKILL.md)。
+
 > 沐风技术博客写作助手（mufeng.blog）/ Technical blog writing assistant for mufeng.blog
 
 ---
@@ -9,14 +31,6 @@
 ### 功能描述
 
 面向 mufeng.blog 的技术博客写作助手。按 Joey 友好专业的写作风格输出技术文章，涵盖 iOS（Swift/Objective-C）、Java/Spring Boot、Vue.js、JavaScript/TypeScript 等技术栈。输出含可运行代码示例（附中文注释）、SEO 元数据，默认保存为本地 Markdown 文件。
-
-### 安装与激活
-
-本 skill 通过 Claude Code 的 Skill 系统自动发现，无需单独安装。在 Claude Code 对话中输入以下命令激活：
-
-```
-/mufeng-blog-writing
-```
 
 ### 使用方式
 
@@ -46,7 +60,7 @@
 2. 依据 `references/templates.md` 选择对应文章结构
 3. 按 `references/identity.md` 风格撰写正文，确保代码可运行
 4. 使用 `references/seo-checklist.md` 生成优化标题、摘要（150-200 字）、标签（4-8 个）
-5. 追加落款（日期、地点、AI 辅助声明）
+5. 追加落款（日期、地点）
 6. 将生成文章保存为 `.md` 文件到当前工作目录
 
 ### 输出格式
@@ -90,14 +104,6 @@ YYYY.MM.DD HH:mm
 
 Technical blog writing assistant for mufeng.blog. Produces articles in Joey's friendly, professional tone, covering iOS (Swift/Objective-C), Java/Spring Boot, Vue.js, and JavaScript/TypeScript. Output includes runnable code examples with Chinese comments, SEO metadata, and is saved as a local Markdown file by default.
 
-### Installation & Activation
-
-This skill is auto-discovered by Claude Code's Skill system. No separate installation is required. Activate in Claude Code chat:
-
-```
-/mufeng-blog-writing
-```
-
 ### Usage
 
 ```
@@ -126,7 +132,7 @@ If the topic description is incomplete, the skill will ask clarifying questions 
 2. Select a structure template from `references/templates.md`
 3. Draft the article in the style defined by `references/identity.md`, ensuring code is runnable
 4. Generate an optimized title, summary (150-200 Chinese chars), and tags (4-8) using `references/seo-checklist.md`
-5. Append footer (timestamp, location, AI-assist declaration)
+5. Append footer (timestamp and location)
 6. Save the generated article as a `.md` file in the current working directory
 
 ### Output Format

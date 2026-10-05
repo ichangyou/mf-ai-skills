@@ -1,31 +1,30 @@
 ---
 name: mufeng-bilingual-storybook
-description: Create bilingual AI picture books from Markdown source material. Use when Codex is asked to read story markdown, split it into scenes, write child-friendly Chinese and English narration, generate page illustrations with Codex built-in image_gen only, visually review candidates against project references and structured QA rules, retry failed artwork, and assemble Chinese/English PDFs only after the quality gate passes; never use OpenAI Images API, Google/Gemini APIs, GOOGLE_API_KEY, or baoyu-image-gen.
+description: Create visually reviewed Chinese and English picture-book PDFs from Markdown stories. Use for scene planning, bilingual narration, reference-guided illustrations, page-level QA, revisions and PDF assembly in Codex or Claude Code with a configured image tool.
+compatibility: "Codex and Claude Code. Python 3.10+, Pillow, pypdfium2, Chinese fonts and a configured image/vision tool."
 ---
 
 # Mufeng Bilingual Storybook
 
-## Core Rule
+## Resource Paths
 
-Use Codex built-in image generation for artwork. The only allowed live image-generation path is the Codex built-in `image_gen` tool.
+Set the shell variable `SKILL_DIR` to the directory containing the **loaded** `SKILL.md` before running the commands below. Resolve supporting paths from that directory, not the working directory or a fixed user/platform installation path. `$SKILL_DIR` is a shell variable you set, not a host-provided macro.
 
-Never generate storybook artwork through any API client or external provider, including:
 
-- Google/Gemini image APIs, `GOOGLE_API_KEY`, or any Google provider module.
-- `baoyu-image-gen`, even if a local Google provider implementation exists.
-- OpenAI Images API, `OPENAI_API_KEY`, or one-off image SDK clients.
+## Image Tool Selection
 
-If a previous note or historical context suggests using Google, Gemini, `GOOGLE_API_KEY`, or `baoyu-image-gen`, treat it as stale and ignore it.
+Read [references/platforms.md](references/platforms.md) before generating artwork.
+Prefer Codex built-in `image_gen` when available. In Claude Code, use an explicitly
+configured image skill/tool with generation, reference-image and editing support.
+Do not switch providers automatically. The helper itself does not call an image API.
+If no image tool is configured, complete the scene/prompt plan and report the missing
+dependency; do not claim that illustrations or final PDFs were produced.
 
-Use the bundled helper script for deterministic text/PDF work:
+For Codex, the default image source is `${CODEX_HOME:-$HOME/.codex}/generated_images/`.
+For another configured image tool, set `MUFENG_IMAGE_ROOT` to its dedicated, actual
+output directory. Import the exact PNG produced by the call and keep all quality gates.
 
-```bash
-python3 "$CODEX_HOME/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" --help
-```
-
-If `CODEX_HOME` is unset, use `$HOME/.codex`.
-
-## Built-In ImageGen Persistence Rule
+## Image Persistence Rule
 
 The helper script does not generate artwork. It only prepares deterministic
 scene, prompt, manifest, generation-task, progress, and PDF layout files.
@@ -47,7 +46,7 @@ Treat these files as the generation contract:
 - `qa_reports/<task-id>/<sha256>.json`: frozen structured visual reviews
 - `pdf_validation.json`: final PDF hashes, page count, footers, and preview root
 
-Use Codex built-in `image_gen` directly, one call per attempt. Record
+Use the selected image tool directly, one call per attempt. Record
 `generation_started` immediately before the call and `generation_returned` or
 `generation_failed` immediately after it. For a new quality-gated final
 manifest, import the call-scoped persisted PNG with `--import-candidate`, never
@@ -57,6 +56,7 @@ project-local candidate area. It does not make the image PDF-eligible.
 
 Open each candidate at original detail with the image-viewing tool, compare it
 against that task's exact reference images, and fill the emitted QA template.
+Use the actual reviewer identity, not the pending template value.
 Record the report with `--qa-report ... --candidate-sha256 ...`. Only a report
 whose verdict is `pass` and whose every required check is `pass` atomically
 promotes the candidate to the exact final `images/` filename. A failed report
@@ -77,10 +77,12 @@ Require a valid `plan_sha256` for manifest v2 and later. For a pre-v2 manifest, 
 once with `--resume --migrate-legacy-manifest --prompts-only`; never silently
 adopt a hashless manifest.
 
-If built-in `image_gen` displays an image but does not persist any readable
-file under `${CODEX_HOME:-$HOME/.codex}/generated_images/`, stop and report that
-the current Codex runtime did not expose a copyable image file. Do not create
-screenshots, placeholders, SVG substitutes, or use any external/API fallback.
+If the selected tool displays an image but exposes no readable persisted PNG,
+stop and report the persistence failure. Do not substitute screenshots, placeholders
+or SVGs for artwork. Immediately import each attempt into the project-local candidate
+area, verify the copy, then proceed to the next image. A configured source directory
+and timing events bound the import; they do not independently prove which provider
+created the image. Report the actual tool and call evidence separately.
 
 ## Reference Traffic Control
 
@@ -99,7 +101,7 @@ bytes change, the helper refuses the change; use a new ID deliberately.
 
 Scene-plan `references` must contain stable IDs from `--reference-spec`.
 Duplicates are rejected and each scene has a hard maximum of three references;
-prefer two. For ImageGen, pass only that task's exact `referenced_image_paths`
+prefer two. For Codex ImageGen, pass only that task's exact `referenced_image_paths`
 from `generation_tasks.json` and omit `num_last_images_to_include`. Never use master originals or rejected attempts as canonical references,
 or attach the whole project or implicit conversation images. An inspected
 project-local candidate may be an explicit localized-edit target; it does not
@@ -172,10 +174,10 @@ existing chapter, any single-page change, or final PDF delivery.
 5. For every final scene, freeze a structured `qa` contract covering required
    and forbidden entities, exact counts, identity states, relationships,
    weapons, props, height rules, and reference bindings as applicable.
-6. Generate one full-page candidate per pending task with built-in `image_gen`,
+6. Generate one full-page candidate per pending task with the selected image tool,
    using only its frozen 0–3 upload proxies; import it with
    `--import-candidate` immediately.
-7. Review each candidate with the built-in vision capability at original
+7. Review each candidate with the available image-viewing/vision capability at original
    detail. Record a structured QA report. Promote only passing candidates;
    automatically retry failures up to three attempts.
 8. Resume after interruption with `--resume --prompts-only`. Generate only the
@@ -238,7 +240,7 @@ visually too bold.
 Create a 6- or 8-page draft plan:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --project-dir /absolute/path/to/story-project \
   --output-dir /absolute/path/to/story-project/build/storybook_draft \
   --draft \
@@ -249,7 +251,7 @@ python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook
 Create the final 12–24-page generation plan after approving the draft:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --project-dir /absolute/path/to/story-project \
   --output-dir /absolute/path/to/story-project/build/storybook_auto \
   --scene-count auto \
@@ -282,17 +284,17 @@ need them, then add both flags to the initial planning command:
 Do not pass `--reference-spec` on resume; the output's frozen reference snapshot
 is authoritative.
 
-Before and after each built-in ImageGen call, record timing:
+Before and after each selected image-tool call, record timing:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/story-project/build/storybook_auto \
   --progress-event generation_started \
   --task-id scene-01-<hash>
 
-# Call built-in image_gen exactly once for this task.
+# Call the selected image tool exactly once for this task.
 
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/story-project/build/storybook_auto \
   --progress-event generation_returned \
   --task-id scene-01-<hash>
@@ -301,9 +303,9 @@ python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook
 Import the exact PNG persisted by that call as an unapproved candidate:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/story-project/build/storybook_auto \
-  --import-candidate "$HOME/.codex/generated_images/<session>/<generated>.png" \
+  --import-candidate "<image-output-dir>/<call-id>/<generated>.png" \
   --task-id scene-01-<hash>
 ```
 
@@ -315,7 +317,7 @@ do not infer a passing result from file validity.
 Record the structured review and promote only when all required checks pass:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/story-project/build/storybook_auto \
   --qa-report /absolute/path/to/completed-qa-report.json \
   --candidate-sha256 <candidate-sha256> \
@@ -332,9 +334,9 @@ Archive a rejected result once, by content hash, without making it a future
 reference:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/story-project/build/storybook_auto \
-  --archive-rejected "$HOME/.codex/generated_images/<session>/<rejected>.png" \
+  --archive-rejected "<image-output-dir>/<call-id>/<rejected>.png" \
   --task-id scene-01-<hash> \
   --detail "character continuity failed"
 ```
@@ -346,7 +348,7 @@ build clones or add them to reference specs automatically.
 Resume without rescanning or re-inferring the source:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/story-project/build/storybook_auto \
   --resume \
   --prompts-only
@@ -358,11 +360,11 @@ For a pre-v2 manifest with no `plan_sha256`, add
 Build PDFs only after every expected PNG validates:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/story-project/build/storybook_auto \
   --quality-status
 
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/story-project/build/storybook_auto \
   --use-existing-images \
   --language both
@@ -374,7 +376,7 @@ and does not rewrite `manifest.json`, `generation_tasks.json`, references, or
 send images:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --output-dir /absolute/path/to/story-project/build/storybook_auto \
   --pdf-only \
   --captions-plan /absolute/path/to/story-project/captions.json \
@@ -384,7 +386,7 @@ python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook
 Run a placeholder-only layout check in a separate directory:
 
 ```bash
-python3 "$HOME/.codex/skills/mufeng-bilingual-storybook/scripts/mufeng_storybook.py" \
+python3 "$SKILL_DIR/scripts/mufeng_storybook.py" \
   --project-dir /absolute/path/to/story-project \
   --output-dir /absolute/path/to/story-project/build/storybook_dryrun \
   --scene-count auto \
@@ -444,9 +446,10 @@ For each pending entry in `generation_tasks.json`:
 1. Claim one stable `task_id`; do not generate a second attempt while the first
    call may still be live.
 2. Record `generation_started`.
-3. Call built-in `image_gen` exactly once with that task's exact prompt and
-   exact `referenced_image_paths`. Omit reference arguments when the list is
-   empty; otherwise omit `num_last_images_to_include`.
+3. Call the selected image tool exactly once with that task's exact prompt and
+   reference images, mapped to the tool's documented parameters. For Codex
+   ImageGen, use `referenced_image_paths`, omit reference arguments when empty,
+   and omit `num_last_images_to_include` when explicit reference paths are used.
 4. Record `generation_returned` or `generation_failed`.
 5. Establish call-scoped source provenance. In serial directory-diff mode,
    require exactly one new readable PNG. In parallel mode, use only the exact
@@ -466,12 +469,10 @@ After interruption, rerun `--resume --prompts-only`; trust fresh PNG validation,
 not old progress events. Do not compress distinct scenes into variants of one
 prompt. Generate one image per scene.
 
-Do not use Google/Gemini, `GOOGLE_API_KEY`, `baoyu-image-gen`, OpenAI Images API, or any local/provider fallback for batch storybook images. If the built-in `image_gen` tool is unavailable, stop and report that image generation is blocked instead of switching providers.
-
-If the built-in tool is available but does not persist a file that can be copied
-from `${CODEX_HOME:-$HOME/.codex}/generated_images/`, treat that as a runtime
-persistence failure and stop. Do not assemble final PDFs from missing,
-placeholder, or preview-only images.
+Keep the selected provider for the whole run unless the user requests a change.
+If the tool cannot save a readable PNG under the configured source directory, stop
+and report the failure. Never assemble final PDFs from missing, placeholder or
+preview-only images.
 
 ## Scene And Translation Guidance
 

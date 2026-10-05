@@ -1,354 +1,93 @@
 # mf-ai-skills
 
-沐风（Joey）的 Claude Code / Codex 个人 AI Skill 集合，共 15 个。
+沐风（Joey）的开源 AI skill 集合，共 16 个，支持 **Codex 和 Claude Code**。
+覆盖写作与发布、阅读与复盘、思考与决策、iOS 工程和研究分析。两端共用 `skills/` 中的同一份内容。
+生图、账号数据和发布需要额外配置工具与凭据。
 
----
+## 快速安装
 
-## 项目简介
-
-本项目收录了沐风日常在用的 Agent Skills，覆盖五类场景：内容写作与发布、周期复盘、结构化思考、iOS 工程质量、研究分析。全部按 Joey 的个人风格和工作流深度定制，不是通用模板的堆砌。
-
-**GitHub**：`ichangyou/mf-ai-skills`
-
----
-
-## Skills 列表
-
-### 写作与发布
-
-| Skill | 用途 | 平台 |
-|-------|------|------|
-| [`mufeng-blog-writing`](#mufeng-blog-writing) | mufeng.blog 技术博客写作（含 SEO 元数据） | Claude Code |
-| [`mufeng-dankoe-writing`](#mufeng-dankoe-writing) | Dan Koe 风格深度长篇写作 | Claude Code / Codex |
-| [`mufeng-wechat-publish-full`](#mufeng-wechat-publish-full) | 微信公众号端到端发布（生图 → 上传 → 发布） | Claude Code |
-| [`mufeng-materials-to-wechat-publish`](#mufeng-materials-to-wechat-publish) | 目录素材转微信公众号图文并发布 | Codex |
-| [`mufeng-bilingual-storybook`](#mufeng-bilingual-storybook) | 中英双语 AI 绘本生成（输出 PDF） | Codex |
-
-### 复盘与笔记
-
-| Skill | 用途 | 平台 |
-|-------|------|------|
-| [`mufeng-weekly-report`](#mufeng-weekly-report) | 从对话记录自动生成周报 | Claude Code |
-| [`mufeng-monthly-report`](#mufeng-monthly-report) | 从对话记录自动生成月报 | Claude Code |
-| [`mufeng-book-notes`](#mufeng-book-notes) | 基于素材生成可落地的读书笔记 | Claude Code |
-
-### 思考与决策
-
-| Skill | 用途 | 平台 |
-|-------|------|------|
-| [`mufeng-brainstorm`](#mufeng-brainstorm) | 结构化头脑风暴（发散 → 收敛 → 深挖 → 反驳） | Claude Code |
-| [`mufeng-virtual-team`](#mufeng-virtual-team) | CTO / 产品经理 / 用户三角色功能评审 | Claude Code |
-| [`mufeng-uxreview`](#mufeng-uxreview) | 资深 UI/UX 设计评审，只给方案不改代码 | Claude Code |
-
-### iOS 工程
-
-| Skill | 用途 | 平台 |
-|-------|------|------|
-| [`mufeng-ios-release-audit`](#mufeng-ios-release-audit) | App Store 上线前发布审计 + 上线文案 | Claude Code |
-| [`mufeng-ios-visual-regression`](#mufeng-ios-visual-regression) | 多语言 / 深色模式截图视觉回归对比 | Claude Code |
-| [`mufeng-parallel-root-cause`](#mufeng-parallel-root-cause) | 调查卡住时的并行证伪式根因排查 | Claude Code |
-
-### 研究分析
-
-| Skill | 用途 | 平台 |
-|-------|------|------|
-| [`mufeng-stock-research`](#mufeng-stock-research) | 股票研究报告（8 项分析，导出 PDF/HTML） | Claude Code |
-
----
-
-## 安装方式
-
-### 方式一：GitHub 远程安装（推荐）
-
-在 `~/.claude/settings.json` 的 `extraKnownMarketplaces` 中添加以下配置：
-
-```json
-{
-  "extraKnownMarketplaces": {
-    "mf-ai-skills": {
-      "source": {
-        "source": "github",
-        "repo": "ichangyou/mf-ai-skills"
-      }
-    }
-  }
-}
-```
-
-保存后，在 Claude Code 中运行 `/plugins` 命令，找到 `mf-ai-skills` 市场，启用需要的 Skills。
-
-### 方式二：本地目录安装
-
-先 clone 到本地：
+需要 Git 和 Python 3.10+。默认同时安装到两端的用户目录，不覆盖已有同名 skill：
 
 ```bash
-git clone git@github.com:ichangyou/mf-ai-skills.git ~/path/to/mf-ai-skills
+git clone https://github.com/ichangyou/mf-ai-skills.git
+cd mf-ai-skills
+python3 scripts/install.py --platform both --scope user
 ```
 
-在 `~/.claude/settings.json` 中配置本地路径：
-
-```json
-{
-  "extraKnownMarketplaces": {
-    "mf-ai-skills": {
-      "source": {
-        "source": "directory",
-        "path": "/Users/你的用户名/path/to/mf-ai-skills"
-      }
-    }
-  }
-}
-```
-
-### 验证安装
-
-在 Claude Code 对话中输入任意 skill 名称（带斜杠前缀），如果可以激活则安装成功：
-
-```
-/mufeng-blog-writing
-```
-
----
-
-## 使用说明
-
-### mufeng-blog-writing
-
-mufeng.blog 技术博客写作助手。输出含可运行代码、SEO 元数据的 Markdown 文件，自动保存到当前目录。
-
-```
-/mufeng-blog-writing [话题描述]
-```
-
-**示例**：
-
-```
-/mufeng-blog-writing SwiftUI @State 和 @Binding 的区别
-/mufeng-blog-writing Spring Boot 整合 Redis 缓存，包含完整代码
-```
-
----
-
-### mufeng-dankoe-writing
-
-Dan Koe 风格深度长篇写作（1000-2000 字）。对话式挑衅开篇，前半理论后半实践，节奏张弛有度，适合思想领袖内容和反主流叙事。
-
-```
-/mufeng-dankoe-writing [话题]
-```
-
-**示例**：
-
-```
-/mufeng-dankoe-writing 为什么大多数人永远无法成为 10x 程序员
-/mufeng-dankoe-writing 关于独立开发者如何在 AI 时代找到自己的位置
-```
-
----
-
-### mufeng-wechat-publish-full
-
-微信公众号端到端发布工作流，共 6 个阶段：内容策略优化 → IP 白名单检查 → DashScope 生图 → GitHub 图床 → HTML 净化 → 微信 API 发布。任何阶段失败后可重新触发定向修复。
-
-```
-/mufeng-wechat-publish-full
-[粘贴 Markdown 文章内容]
-```
-
-**修复失败步骤**：
-
-```
-/mufeng-wechat-publish-full
-上次 Stage 3 GitHub 上传失败了，文章如下：[内容]
-```
-
----
-
-### mufeng-materials-to-wechat-publish
-
-将目录素材自动转化为带插图的微信公众号图文并发布。全流程：素材读取 → 文章生成 → 图片生成 → GitHub 图床 → URL 插入 → 微信 API 发布。运行于 Codex 环境。
-
-```
-/mufeng-materials-to-wechat-publish
-```
-
----
-
-### mufeng-bilingual-storybook
-
-基于 Markdown 素材生成中英双语 AI 绘本，输出中文版和英文版 PDF。运行于 Codex 环境，使用 Codex 内置图像生成，不需要外部图像 API。
-
-```
-/mufeng-bilingual-storybook
-[提供故事 Markdown 文件或内容]
-```
-
----
-
-### mufeng-weekly-report
-
-从当前及近期 session 对话记录自动提取信息，生成结构化周报（技术成长、学习、写作、健康、生活、想法六大类别），附亮点分析与改进建议。
-
-```
-/mufeng-weekly-report
-```
-
-无需参数，在周末复盘时触发即可。
-
----
-
-### mufeng-monthly-report
-
-月报版本，比周报更聚焦趋势和规律提炼，含七大类别、月度深度分析、下月行动建议和展望。
-
-```
-/mufeng-monthly-report
-```
-
----
-
-### mufeng-book-notes
-
-基于提供的书籍摘录或内容，生成可落地、能指导行动的读书笔记（7 个固定章节结构），风格真实克制，不鸡汤。
-
-```
-/mufeng-book-notes
-[粘贴书籍摘录或内容]
-```
-
-**示例**：
-
-```
-/mufeng-book-notes 书名：《纳瓦尔宝典》，帮我生成读书笔记
-/mufeng-book-notes 书名：《深度工作》，以下是我摘录的几段话：[内容]
-```
-
-也支持关键词自动触发：`读书笔记`、`书评`、`帮我总结这本书`
-
----
-
-### mufeng-brainstorm
-
-结构化头脑风暴框架，自动识别四类场景（产品功能 / 技术选型 / 内容策略 / 项目规划）并执行对应流程：发散 → 收敛（价值/成本矩阵）→ 深挖 Top 3 → 子 Agent 反驳 Top 1。
-
-```
-/mufeng-brainstorm [问题描述]
-```
-
-**四类场景示例**：
-
-```
-# 产品功能
-/mufeng-brainstorm 新功能：用户想要离线模式，有哪些实现方案
-
-# 技术选型
-/mufeng-brainstorm 我要做实时聊天，WebSocket 还是 SSE 还是 Long Polling
-
-# 内容策略
-/mufeng-brainstorm 这个月公众号选题太难了，帮我想 15 个 AI 相关的选题
-
-# 项目规划
-/mufeng-brainstorm 我想为独立开发者做一个 AI 助手 App，不知道从哪个功能入手
-```
-
----
-
-### mufeng-virtual-team
-
-让 AI 依次扮演 CTO、产品经理、普通用户，对同一个功能做三视角评审，最后综合裁决。目的不是给答案，而是暴露一个人开发时看不到的盲区。全程只做分析和建议，不写实现代码。
-
-```
-/mufeng-virtual-team [功能描述]
-```
-
-**示例**：
-
-```
-/mufeng-virtual-team 我想给笔记 App 加一个 AI 自动打标签功能，值不值得做
-```
-
-评审前会先追问目标用户、现状、技术上下文、项目阶段，信息不全不会硬评。
-
----
-
-### mufeng-uxreview
-
-以资深产品设计师身份评审指定页面或界面。读真实组件代码（Tailwind / SwiftUI）后，按层级、间距、文案、可供性、设计系统违规五个维度分组汇报，按影响排序。只给方案，批准前不改代码。
-
-```
-/mufeng-uxreview [页面或组件路径]
-```
-
-**示例**：
-
-```
-/mufeng-uxreview src/pages/Settings.tsx
-/mufeng-uxreview 看看 ShotZen 的相册选择页有什么问题
-```
-
----
-
-### mufeng-ios-release-audit
-
-iOS App Store 上线前完整发布审计。逐项核验权限文案、托管 EULA/条款 URL 及违禁内容条款、硬编码价格、`.lproj` 本地化完整性、App 图标、版本号与 build 号、数据层强制解包、零编译警告、多语言商店元数据，并产出微信 / X / Reddit 上线文案。
-
-清单的每一项都来自真实的拒审或事故，不是通用最佳实践的罗列。全程只读，发现问题先报告根因和修复方案。
-
-```
-/mufeng-ios-release-audit
-```
-
-仅适用于 iOS / App Store 项目。
-
----
-
-### mufeng-ios-visual-regression
-
-iOS 视觉回归测试（UIKit / SwiftUI 通用）。任何 UI 改动（布局、颜色、间距、字体、深色模式、本地化文案）之后，通过模拟器对每个顶层页面在所有支持语言和明暗外观下截图，与已提交的基线对比，产出框出差异区域的 HTML 报告。
-
-本 skill 是共享引擎，每个项目自带 `VisualRegression/config.json` 和一个 DEBUG-only 的应用内 harness。
+默认使用软链接，保留仓库即可通过 `git pull` 更新。Windows 或不支持软链接时加 `--mode copy`。
+只安装一个 skill：
 
 ```bash
-~/.claude/skills/mufeng-ios-visual-regression/run.sh init       # 初始化新项目
-~/.claude/skills/mufeng-ios-visual-regression/run.sh check      # UI 改动后检查
-~/.claude/skills/mufeng-ios-visual-regression/run.sh baseline   # 接受当前 UI 为基线
+python3 scripts/install.py --platform both --skill mufeng-book-notes
 ```
 
-需要 macOS + Xcode 模拟器。
+项目级安装、冲突处理、更新与卸载见 [安装文档](docs/installation.md)。当前采用直接安装方式，没有 Claude Code marketplace。
 
----
+## 怎么调用
 
-### mufeng-parallel-root-cause
+| Codex | Claude Code |
+|---|---|
+| `$mufeng-book-notes 根据这份摘录生成读书笔记` | `/mufeng-book-notes 根据这份摘录生成读书笔记` |
 
-并行证伪式根因调查。用于调查已经卡住的硬 bug：两条以上线索已经追死、故障横跨多层（应用代码 / 配置 / 第三方服务 / 系统 / 本地工具链）、或者症状和最显然的解释相互矛盾。
+也可用自然语言明确要求使用 skill。安装后未出现时，重新加载 skills 或重启客户端。
 
-核心原则不是并行找证据支持猜想，而是并行地**杀死**猜想。每个子代理的任务是证伪自己的假设，活到最后的假设才配谈修复。
+## 有哪些 skill，需要什么依赖
 
+下表列的是执行条件，不表示外部服务已经完成端到端验证。详细示例见各 skill 的使用说明。
+
+| 场景 | Skill / 使用说明 | 用途 | 额外依赖 |
+|---|---|---|---|
+| 写作 | [mufeng-blog-writing](skills/mufeng-blog-writing/README.md) | 技术博客、教程和排错文章 | 素材；核实事实时需网络检索 |
+| 写作 | [mufeng-dankoe-writing](skills/mufeng-dankoe-writing/README.md) | Dan Koe 风格长篇写作 | 无专用工具 |
+| 发布 | [mufeng-wechat-publish-full](skills/mufeng-wechat-publish-full/README.md) | 完成文章的配图、上传和公众号发布 | 生图工具、gh、Bun、发布工具与凭据 |
+| 发布 | [mufeng-materials-to-wechat-publish](skills/mufeng-materials-to-wechat-publish/README.md) | 目录素材转公众号文章 | 博客 skill、网络检索；生图和发布依赖同上 |
+| 绘本 | [mufeng-bilingual-storybook](skills/mufeng-bilingual-storybook/README.md) | 中英文插画绘本与 PDF | Python、Pillow、pypdfium2、生图/视觉工具；默认 PDF 字体需 macOS |
+| 阅读 | [mufeng-book-notes](skills/mufeng-book-notes/README.md) | 可落地的读书笔记 | 真实摘录或读书材料 |
+| 阅读 | [mufeng-weread-x-writing](skills/mufeng-weread-x-writing/README.md) | 阅读记录提炼原创 X 推文 | Python；微信读书工具或真实导出材料 |
+| 复盘 | [mufeng-weekly-report](skills/mufeng-weekly-report/README.md) | 周报与行动建议 | 当前对话或用户提供的周记录 |
+| 复盘 | [mufeng-monthly-report](skills/mufeng-monthly-report/README.md) | 月度趋势与行动计划 | 当前对话或用户提供的月记录 |
+| 思考 | [mufeng-brainstorm](skills/mufeng-brainstorm/README.md) | 发散、筛选和反驳 | 子代理可选；缺少时注明顺序检查 |
+| 思考 | [mufeng-virtual-team](skills/mufeng-virtual-team/README.md) | CTO / 产品 / 用户多视角评审 | 功能描述与项目背景 |
+| 设计 | [mufeng-uxreview](skills/mufeng-uxreview/README.md) | UI/UX 评审 | 页面代码，必要时提供截图 |
+| iOS | [mufeng-ios-release-audit](skills/mufeng-ios-release-audit/README.md) | 上线审计与上线文案 | iOS 项目；编译需 macOS + Xcode |
+| iOS | [mufeng-ios-visual-regression](skills/mufeng-ios-visual-regression/README.md) | 多语言与明暗截图对比 | macOS + Xcode + Simulator、Python、Pillow、应用 harness |
+| 调试 | [mufeng-parallel-root-cause](skills/mufeng-parallel-root-cause/README.md) | 证伪式根因调查 | 日志和实验工具；并行需子代理 |
+| 研究 | [mufeng-stock-research](skills/mufeng-stock-research/README.md) | 股票研究与报告导出 | 网络检索；MCP 可选；导出需 Pandoc，PDF 需 Chrome/Chromium |
+
+生图、发布、阅读数据和历史会话的配置与限制，见 [兼容性文档](docs/compatibility.md)。
+
+## 目录与维护
+
+```text
+skills/<name>/             # 唯一内容来源
+  SKILL.md                 # AI 执行说明与元数据
+  README.md                # 用户使用说明
+  references/              # 详细规则（可选）
+  scripts/                 # 辅助脚本（可选）
+  assets/                  # 图片、模板（可选）
+  agents/openai.yaml       # Codex UI 元数据（可选）
+.agents/skills/<name>      # Codex 项目入口 → skills/<name>
+.claude/skills/<name>      # Claude Code 项目入口 → skills/<name>
+docs/                     # 安装和兼容性说明
+scripts/                  # 安装、校验和打包工具
+examples/                 # 可选 API 示例和历史格式
+tests/                    # 安装与兼容性回归测试
 ```
-/mufeng-parallel-root-cause [问题描述]
+
+开发检查：
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python scripts/validate.py
+.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m unittest discover -s skills/mufeng-bilingual-storybook/tests -v
 ```
 
-不适用于第一次看这个 bug，或 stack trace 已直接指向某个文件的情况。
-
----
-
-### mufeng-stock-research
-
-股票研究与市场分析（仅用于教育和信息目的，不构成投资建议）。可独立通过网络搜索运行，接入 Financial Datasets MCP 后可获取实时结构化数据。执行 8 项分析：基本面、风险、DCF 估值、同业对比、催化剂、技术面、情绪面、研究总结，默认导出 PDF + HTML，也支持 Word。中英文均可。
-
-```
-/mufeng-stock-research [公司名或代码]
-```
-
-**示例**：
-
-```
-/mufeng-stock-research NVDA
-/mufeng-stock-research 分析一下腾讯控股，用中文出报告
-```
-
----
+Windows 使用 `.venv\Scripts\python.exe`。绘本 PDF 测试使用 macOS 默认字体。
+校验覆盖元数据、两端入口、目录索引和本地链接；业务效果与外部服务需要真实环境验证。
+贡献约定见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 许可证
 
-MIT © Chang You
+MIT © Chang You，见 [LICENSE](LICENSE)。

@@ -1,9 +1,15 @@
 ---
 name: mufeng-ios-visual-regression
 description: Visual regression testing for iOS apps (UIKit or SwiftUI). Use after ANY UI change (layout, colors, spacing, fonts, dark-mode, localization strings) to screenshot each top-level screen in every supported language and appearance via the simulator, diff against committed baselines, and produce an HTML report boxing the changed regions. Shared engine; each project supplies its own config + in-app DEBUG harness. Also use to scaffold a new project (`init`) or regenerate baselines. Triggers include "视觉回归", "visual regression", "截图对比", "UI 改动后检查", "screenshot diff", "did my UI change break anything".
+compatibility: "Codex and Claude Code. macOS, Xcode, iOS Simulator, Python 3 and Pillow."
 ---
 
 # Visual Regression (shared engine)
+
+## Resource Paths
+
+Set the shell variable `SKILL_DIR` to the directory containing the **loaded** `SKILL.md` before running the commands below. Resolve supporting paths from that directory, not the working directory or a fixed user/platform installation path. `$SKILL_DIR` is a shell variable you set, not a host-provided macro.
+
 
 Screenshot diffing for an iOS app's top-level screens across languages and
 light/dark. This skill is the **shared engine**; each project supplies its own
@@ -16,10 +22,10 @@ Located project = `$VR_PROJECT` or the current working directory (must contain
 ## Command (run from the project root)
 
 ```bash
-~/.claude/skills/mufeng-ios-visual-regression/run.sh check       # after a UI change
-~/.claude/skills/mufeng-ios-visual-regression/run.sh baseline    # accept current UI as truth
-~/.claude/skills/mufeng-ios-visual-regression/run.sh open        # reopen last report
-~/.claude/skills/mufeng-ios-visual-regression/run.sh init        # scaffold a NEW project
+$SKILL_DIR/scripts/run.sh check       # after a UI change
+$SKILL_DIR/scripts/run.sh baseline    # accept current UI as truth
+$SKILL_DIR/scripts/run.sh open        # reopen last report
+$SKILL_DIR/scripts/run.sh init        # scaffold a NEW project
 ```
 
 Add `--build` to `check`/`baseline` to force a clean `xcodebuild` first. `check`
@@ -44,7 +50,7 @@ After you modify any UI code, BEFORE reporting "done":
 
 ## Onboarding a NEW project
 
-1. `cd <project> && ~/.claude/skills/mufeng-ios-visual-regression/run.sh init`.
+1. `cd <project> && $SKILL_DIR/scripts/run.sh init`.
 2. Edit `VisualRegression/config.json`: `scheme`, the build container
    (`workspace` for a CocoaPods/`.xcworkspace` project, or `xcodeproj` for a
    plain `.xcodeproj`), `bundle_id`, `source_dir` (the folder holding your

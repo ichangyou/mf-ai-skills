@@ -1,9 +1,19 @@
 ---
 name: mufeng-wechat-publish-full
 description: Use when publishing articles to WeChat Official Account (微信公众号), including tasks that involve SEO/GEO-friendly Markdown metadata, professional article visuals, background-only cover generation, deterministic screenshots or diagrams before imagegen, uploading assets to the fixed GitHub image host, direct Markdown publishing, HTML fallback publishing, or calling the WeChat API. Also use when any step of a previous WeChat publish attempt failed. Includes AI tech blog content strategy for maximizing WeChat platform recommendation (推荐曝光).
+compatibility: "Codex and Claude Code. An image tool when generating covers, gh authentication and a configured WeChat publisher."
 ---
 
 # Mufeng WeChat Full Publishing Workflow
+
+## Resource Paths
+
+Set the shell variable `SKILL_DIR` to the directory containing the **loaded** `SKILL.md` before running the commands below. Resolve supporting paths from that directory, not the working directory or a fixed user/platform installation path. `$SKILL_DIR` is a shell variable you set, not a host-provided macro.
+
+
+## Platform Dependencies
+
+Read [references/platforms.md](references/platforms.md) before generating images or publishing. Set `MUFENG_WECHAT_SCRIPT` to the actual `wechat-api.ts` path from an installed `baoyu-post-to-wechat` skill, or use a documented publisher already configured in the host. The variable does not install the publisher. If the dependency or credentials are missing, finish the local article and report that publishing was not executed.
 
 ## Overview
 
@@ -259,7 +269,7 @@ Upload images to a GitHub repo so WeChat can reference stable CDN URLs. WeChat r
 
 ```bash
 # Preferred fixed image host:
-python3 "$HOME/.agents/skills/mufeng-wechat-publish-full/scripts/upload_github_images.py" \
+python3 "$SKILL_DIR/scripts/upload_github_images.py" \
   --repo "mf-blog/blogPictures" \
   --branch "main" \
   --remote-dir "images/<article-slug>" \
@@ -326,7 +336,7 @@ Failure modes:
 Read `$HOME/.baoyu-skills/baoyu-post-to-wechat/EXTEND.md` if present for local defaults. Publish the final Markdown file directly:
 
 ```bash
-bun ~/.claude/plugins/marketplaces/baoyu-skills/skills/baoyu-post-to-wechat/scripts/wechat-api.ts \
+bun "$MUFENG_WECHAT_SCRIPT" \
   <article.md> \
   --theme default \
   --author changyou \

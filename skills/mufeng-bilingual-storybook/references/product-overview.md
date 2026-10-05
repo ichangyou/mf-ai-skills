@@ -12,7 +12,7 @@ book projects with scene breakdowns, child-friendly narration, illustration prom
 - Writes natural Chinese narration for each page
 - Writes child-friendly English narration for each page
 - Generates illustration prompts for every scene
-- Uses Codex built-in image generation for page illustrations
+- Uses the configured image tool for page illustrations
 - Assembles final PDF storybooks:
   - `storybook.pdf` for Chinese
   - `storybook_en.pdf` for English
@@ -86,12 +86,12 @@ build/storybook_auto/
 
 ## Important Notes
 
-This Agent uses Codex built-in image generation. It does not call the OpenAI Images API and does not require OPENAI_API_KEY.
+This skill works in Codex and Claude Code. Image tools and their credentials must be configured in the host; the helper does not call an image API.
 
-The helper script handles deterministic text, layout, image checking, and PDF assembly. Image creation is handled through Codex's built-in image generation workflow.
+The helper script handles deterministic text, layout, image checking, and PDF assembly. Image creation is handled through the selected host image tool.
 
 ## 中文说明
 
-这个 Agent 可以把 Markdown 故事素材制作成中英双语绘本。它会自动拆分分镜，生成中文旁白、英文旁白和插画提示词，使用 Codex 内置生图能力生成每页插图，并最终输出中文版和英文版 PDF。
+这个 Agent 可以把 Markdown 故事素材制作成中英双语绘本。它会自动拆分分镜，生成中文旁白、英文旁白和插画提示词，使用当前平台已配置的生图工具生成每页插图，并最终输出中文版和英文版 PDF。
 
 适合用于儿童绘本、亲子阅读、双语学习、经典故事改编和教育内容制作。

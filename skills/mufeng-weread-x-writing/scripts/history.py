@@ -13,7 +13,8 @@ from pathlib import Path
 from typing import Any
 
 
-DEFAULT_HISTORY = Path.home() / ".codex" / "mufeng-weread-x" / "history.jsonl"
+DEFAULT_HISTORY = Path.home() / ".local" / "share" / "mf-ai-skills" / "weread-x" / "history.jsonl"
+LEGACY_HISTORY = Path.home() / ".codex" / "mufeng-weread-x" / "history.jsonl"
 VALID_STATUS = {"generated", "saved", "published"}
 
 
@@ -21,7 +22,10 @@ def history_path(value: str | None) -> Path:
     if value:
         return Path(value).expanduser()
     root = os.environ.get("MUFENG_WEREAD_X_HOME")
-    return Path(root).expanduser() / "history.jsonl" if root else DEFAULT_HISTORY
+    if root:
+        return Path(root).expanduser() / "history.jsonl"
+    # Preserve existing history instead of silently starting a second memory.
+    return LEGACY_HISTORY if LEGACY_HISTORY.is_file() and not DEFAULT_HISTORY.exists() else DEFAULT_HISTORY
 
 
 def ensure_history(path: Path) -> None:
