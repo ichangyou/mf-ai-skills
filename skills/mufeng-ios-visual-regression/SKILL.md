@@ -74,8 +74,21 @@ After you modify any UI code, BEFORE reporting "done":
   day depending on the capturing machine's time zone.
 - Use the SAME simulator device+OS for baseline and check (pin via
   `simulator_name`). Pixel diffs are resolution-sensitive.
+- `"screenshot_mask": "black"` passes `--mask=black` to `simctl io screenshot`.
+  The default (`ignored`) saves the unmasked framebuffer, where the Dynamic
+  Island appears in some shots and not others — worst on screens with running
+  animations. Default stays `ignored` so existing baselines stay valid;
+  switching a project to `black` changes every shot, so re-baseline after.
 - Threshold default 0.5% (the home-indicator anti-aliasing is a ~0.2% noise
   floor). Raise per project if a screen has unavoidable dynamic content.
+- `"ignore_regions": [[x0, y0, x1, y1], ...]` (screenshot pixels, x1/y1
+  exclusive) zeroes those rects out of the diff before `pct` and boxes are
+  computed; the denominator stays the full image. Use it for system-drawn
+  strips that flip between runs — e.g. the home indicator, measured on
+  SpeechNote's iPhone 16 (1179×2556) as pure black on some light-mode launches
+  and gray (99,99,99) on others, a 0.208% swing. Coordinates are
+  device-specific: re-measure after changing `simulator_name`. Anything that
+  really changes inside an ignored rect goes undetected.
 - **Dead-frame sentinel.** Capture races the app: shooting before it is
   foregrounded yields the springboard wallpaper, shooting before it renders
   yields a flat colour. Both used to be written into `baselines/` silently and

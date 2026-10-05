@@ -39,9 +39,15 @@ def rel(base, path):
     return os.path.relpath(path, base)
 
 
-def changed_mask(base_img, cur_img):
+def changed_mask(base_img, cur_img, ignore_regions=()):
     gray = ImageChops.difference(base_img, cur_img).convert("L")
-    return gray.point(lambda p: 255 if p > PIX_TOL else 0)
+    mask = gray.point(lambda p: 255 if p > PIX_TOL else 0)
+    # 系统绘制、随机变化的区域（如底部 home indicator 时黑时灰）不计入差异
+    if ignore_regions:
+        draw = ImageDraw.Draw(mask)
+        for (x0, y0, x1, y1) in ignore_regions:
+            draw.rectangle([x0, y0, x1 - 1, y1 - 1], fill=0)
+    return mask
 
 
 def region_boxes(mask):
@@ -65,13 +71,13 @@ def make_overlay(cur_img, boxes, dst):
     over.save(dst)
 
 
-def compare_one(base_path, cur_path, overlay_path):
+def compare_one(base_path, cur_path, overlay_path, ignore_regions=()):
     base_img = Image.open(base_path).convert("RGB")
     cur_img = Image.open(cur_path).convert("RGB")
     if base_img.size != cur_img.size:
         return {"status": "size-mismatch", "pct": 100.0,
                 "note": f"{base_img.size} -> {cur_img.size}"}
-    mask = changed_mask(base_img, cur_img)
+    mask = changed_mask(base_img, cur_img, ignore_regions)
     w, h = mask.size
     changed = mask.histogram()[255]
     pct = 100.0 * changed / (w * h)
@@ -82,7 +88,7 @@ def compare_one(base_path, cur_path, overlay_path):
             "overlay": overlay_path if boxes else None}
 
 
-def collect(project):
+def collect(project, ignore_regions=()):
     root = os.path.join(project, "VisualRegression")
     base_root = os.path.join(root, "baselines")
     cur_root = os.path.join(root, "current")
@@ -106,7 +112,7 @@ def collect(project):
         elif not os.path.exists(cur_path):
             item.update(status="missing", pct=None)
         else:
-            item.update(compare_one(base_path, cur_path, overlay_path))
+            item.update(compare_one(base_path, cur_path, overlay_path, ignore_regions))
         item["base"] = base_path if os.path.exists(base_path) else None
         item["cur"] = cur_path if os.path.exists(cur_path) else None
         results.append(item)
@@ -192,7 +198,8 @@ def main():
     project = find_project(args.project)
     cfg = load_config(project)
     threshold = float(cfg["diff_threshold_pct"])
-    results, report_dir = collect(project)
+    ignore_regions = [tuple(r) for r in cfg.get("ignore_regions", [])]
+    results, report_dir = collect(project, ignore_regions)
     if not results:
         sys.exit("No screenshots found. Run capture first.")
 

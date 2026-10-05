@@ -267,6 +267,10 @@ def capture_all(project, cfg, udid, app, mode):
     styles = cfg.get("styles", ["light"])
     settle = float(cfg["settle_seconds"])
     check_dead = cfg.get("dead_frame_check", True)
+    # ignored（simctl 默认）存的是未遮罩的原始帧，灵动岛时有时无，页面有持续动画时尤其明显；
+    # black 把圆角和灵动岛固定画黑，截图才稳定。默认保持 ignored，避免已有项目的基线全部失效
+    mask = cfg.get("screenshot_mask", "ignored")
+    shot = lambda dst: run(["xcrun", "simctl", "io", udid, "screenshot", f"--mask={mask}", dst])
     dead = []
 
     # 顺序有讲究：重启会清掉状态栏 override 也会卸掉运行中的一切，
@@ -294,7 +298,7 @@ def capture_all(project, cfg, udid, app, mode):
                     continue
                 time.sleep(settle)
                 dst = os.path.join(out_dir, f"{sid}.png")
-                run(["xcrun", "simctl", "io", udid, "screenshot", dst])
+                shot(dst)
 
                 # 抓到废帧就多等一轮重来；竞态基本一次重试即可消除
                 reason = _dead_frame_reason(dst) if check_dead else None
@@ -306,7 +310,7 @@ def capture_all(project, cfg, udid, app, mode):
                     if run(launch).returncode != 0:
                         break
                     time.sleep(settle * (1 + attempt))
-                    run(["xcrun", "simctl", "io", udid, "screenshot", dst])
+                    shot(dst)
                     reason = _dead_frame_reason(dst)
 
                 total += 1
