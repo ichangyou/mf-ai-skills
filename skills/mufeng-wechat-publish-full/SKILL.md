@@ -17,9 +17,15 @@ Read [references/platforms.md](references/platforms.md) before generating images
 
 ## Overview
 
-End-to-end skill for publishing AI tech blog articles to a WeChat Official Account. Covers every stage: content strategy for platform recommendations, SEO/GEO-friendly Markdown metadata, IP verification, professional visuals, fixed GitHub image hosting, direct Markdown publishing, HTML fallback sanitization, and final publish. Follow stages in order — skipping any stage causes silent failures downstream.
+End-to-end skill for publishing AI tech blog articles to a WeChat Official Account. Covers every stage: content strategy for platform recommendations, SEO/GEO-friendly Markdown metadata, IP verification, professional visuals, fixed GitHub image hosting, direct Markdown publishing, HTML fallback sanitization, and API draft upload. The default outcome is a verified draft, not public publication. Follow the stages relevant to that outcome; optional backend settings must not block draft upload.
 
 ## Core Publishing Rules
+
+- “发布到公众号” defaults to uploading to the selected account's draft box through API. Public publication or mass sending requires an explicit request such as “正式发布” or “群发”; do not infer it from draft upload.
+- For article workflows, use API for upload and verification. Do not open the backend, invoke Computer Use, or switch to browser automation unless the user explicitly requests browser operation. An API error is not authorization to switch methods.
+- Resolve the account from the user's destination and local EXTEND.md; always pass `--account <alias>` in multi-account setups. For 沐风iOS, use `--account mufeng-ios`. Missing credentials for that account must not silently fall back to another account.
+- `wechat-api.ts` calls `draft/add`; it does not submit public publication. Verify the returned `media_id` through `draft/get` on the same account before reporting a verified draft.
+- Report local article completion, draft upload, draft read-back verification, and public publication separately. Never claim an unexecuted step succeeded.
 
 - Prefer publishing from the final Markdown file. Do not pre-convert Markdown to HTML unless the user explicitly asks for HTML publishing or the API path is unavailable.
 - Every generated or revised Markdown article should have SEO/GEO-friendly YAML frontmatter before publishing.
@@ -36,11 +42,11 @@ End-to-end skill for publishing AI tech blog articles to a WeChat Official Accou
 
 ## Stage 0: Content Strategy — AI Tech Blog for Maximum Recommendation (推荐曝光)
 
-WeChat's recommendation system (看一看/搜一搜/流量主) surfaces articles based on **completion rate (完读率)**, **share rate**, and **Wow/Like signals**. For AI tech content, follow these rules to optimize for each signal.
+The following are editorial suggestions, not verified descriptions of WeChat recommendation algorithms. Do not assert signal weights, guaranteed exposure, or timing benefits without a current, verifiable source. Use account analytics to evaluate reading and engagement.
 
 ### Title Formula (标题)
 
-WeChat's algorithm weights the title heavily for initial distribution. For AI tech:
+Use a clear title that communicates the article topic and value. For AI tech:
 
 **四种有效结构（四选一）：**
 - `[具体工具/场景] + 实测/亲测 + 结论` — e.g., "我用 Claude 做了三个月 AI 助手，说几句真实感受"
@@ -48,13 +54,13 @@ WeChat's algorithm weights the title heavily for initial distribution. For AI te
 - `[数字/量化] + 行动 + 收益` — e.g., "10 个让 Claude Code 效率翻倍的使用习惯"
 - `[读者痛点] + 解法` — e.g., "AI 工具用了一年，我踩过的最贵的坑"
 
-带数字的标题完读率高于无数字标题（如"5 个技巧"优于"一些技巧"）。
+数字适合表达真实步骤或清单；是否提升阅读表现，需要用账号数据验证。
 
 **Title rules:**
 - 长度：18-26 个汉字（含标点），不超过 30 字
-- 避免标题党措辞（微信会降权）：不用"震惊""万万没想到""99% 的人不知道""赶紧转"
+- 避免标题党措辞：不用"震惊""万万没想到""99% 的人不知道""赶紧转"
 - AI 技术类关键词前置：Claude、MCP、Agent、Cursor、提示词、大模型等核心词放标题前半段，利于搜索收录
-- 不用问号结尾——微信算法对疑问句标题分发更保守
+- 优先使用直接表达结论的标题；不声称疑问句会受到算法限制
 - 每次输出 3 个标题备选（利益驱动型 / 反常识型 / 代入感型），让作者选择
 
 **Bad → Good examples:**
@@ -63,7 +69,7 @@ WeChat's algorithm weights the title heavily for initial distribution. For AI te
 
 ### Content Structure for High Completion Rate (完读率)
 
-完读率是微信推荐算法最重要的信号。目标：读者打开后读完全文。
+目标：让读者理解内容并愿意读完。完读率可以用于评估文章表现，不声称它具有已知的算法权重。
 
 **Opening (前 150 字，最关键):**
 - 第一段必须直接给出"为什么值得读"——一句话说清本文价值
@@ -71,7 +77,7 @@ WeChat's algorithm weights the title heavily for initial distribution. For AI te
 - 直接给结论或最有冲击力的发现，再往回解释
 
 **Body structure:**
-- 每 400-600 字插入一张图（降低跳出率）
+- 约每 400-600 字考虑一张有信息价值的图；按内容需要调整，不保证降低跳出率
 - 段落不超过 4 行（移动端阅读节奏）
 - 每个 H2/H3 小标题要能独立成句，让快速浏览者也能获得价值
 - 代码块要有上下文说明——纯代码块会造成完读率骤降
@@ -100,10 +106,9 @@ Every generated or revised WeChat article must end with one short topic-specific
 
 ### Timing (发布时间)
 
-微信推荐窗口在发布后的 2-4 小时内最关键。选择：
-- **最佳时间段**：周二至周四，20:00-22:00（用户活跃 + 竞争文章相对少）
-- **次选**：工作日 12:00-13:00（午休）
-- **避开**：周一早晨、周五下午、节假日（竞争高或用户分散）
+可把工作日 12:00-13:00 或 20:00-22:00 作为测试时段，并根据账号历史数据调整。这些是经验建议，不是已验证的平台推荐窗口或保证收益。
+
+默认上传草稿不受时段限制。用户要求立即处理时，继续上传；只有用户明确要求定时正式发布时才处理发布时间。
 
 ### Cover Image (封面图)
 
@@ -123,10 +128,10 @@ Aspect ratio 2.35:1.
 
 ### Tags & Category (话题标签)
 
-发布时选择话题标签（#话题）影响搜一搜收录：
+话题标签应贴合内容；不要保证它们会提升搜索权重：
 - AI 相关优先选：`#人工智能` `#大模型` `#AI工具` `#程序员` `#Claude` `#ChatGPT` `#Cursor`
-- 每篇文章添加 2-3 个话题标签（过多稀释权重）
-- 话题名与文章关键词一致时搜索权重更高
+- 建议选择 2-3 个相关话题标签，避免无关标签
+- YAML `tags` 不等于公众号平台话题标签；当前脚本不支持设置的平台标签，记录为待手动设置，不阻塞草稿上传
 
 ### SEO/GEO Markdown Frontmatter
 
@@ -161,51 +166,27 @@ Rules:
 
 ### Original Mark (原创标识)
 
-- 每篇文章必须开启"原创"标识——原创文章获得微信额外分发权重
-- 原创文章可被其他账号转载（并标注来源），增加曝光
-- 转载他人文章不得标原创；AI 辅助写作的原创内容可标原创（只要主要内容是自己的）
+- 主要内容来自作者的原创经验时，可准备原创声明；转载他人内容不得声明原创。
+- 当前 `wechat-api.ts` 未提供原创声明参数。将原创标识记录为待手动设置，不为此打开后台，不阻塞草稿上传，也不声称已经开启。
+- 如后续使用其他接口设置，先核对接口支持范围，并验证实际结果。
 
-### What WeChat's Algorithm Rewards (算法加分项)
+### Evaluate Content Performance (内容表现)
 
-| 信号 | 权重 | 如何优化 |
-|------|------|---------|
-| 完读率 | 极高 | 精简开头、段落短、图文穿插 |
-| 分享率 | 高 | 结尾引导、内容有"值得分享"价值 |
-| 在看（Wow）率 | 高 | 结尾引导点"在看" |
-| 评论数 | 中 | 结尾提问、观点有争议性 |
-| 收藏率 | 中 | 提供"工具性"内容（清单、对比表、命令速查） |
-| 打开率 | 中 | 标题 + 封面图优化 |
+用阅读完成情况、分享、在看、评论、收藏和打开情况评估文章；不预设这些指标的算法权重。实际代码、截图、对比和清单应服务主题，不为追求未经证实的推荐收益添加无关内容。
 
-**AI 内容加分项**：
-- 有实际可运行的 Prompt 或代码（读者会收藏）
-- 涉及最近 2 周内发布的新模型/新工具（时效性加权）
-- 有横向对比（Claude vs GPT vs Gemini）——争议性驱动评论
-- 揭示"反直觉"结论——驱动分享
+## Stage 1: Pre-flight — Account, Credentials and Egress IP
 
----
-
----
-
-## Stage 1: Pre-flight — IP Whitelist Check
-
-**Do this before any API call. A 401/403 with no obvious auth error is almost always an IP issue.**
+1. Read local EXTEND.md and resolve the requested account and credentials without printing AppSecret or access tokens.
+2. Record the current outbound IP before WeChat API calls:
 
 ```bash
-# Check current outbound IP
-curl -s https://api.ipify.org
-
-# Compare against whitelisted IPs in WeChat MP backend:
-# Settings > Developer Tools > IP Whitelist
+curl -fsS --max-time 15 https://api.ipify.org
 ```
 
-Failure modes:
-- [ ] IP not whitelisted → add it in WeChat MP backend before continuing
-- [ ] VPN or proxy active → current IP differs from whitelisted IP; disable or whitelist VPN IP
-- [ ] Dynamic IP changed since last session → re-check; do not assume yesterday's IP is still valid
-
-**Never retry API calls until IP is confirmed whitelisted.**
-
----
+3. Do not require opening the backend to confirm the whitelist in advance. Use the configured API path; a successful authenticated API response shows that request was accepted from its actual egress route. A failed IP lookup alone does not establish a whitelist failure.
+4. On an explicit invalid-IP error (for example `errcode 40164`), stop dependent calls and report the account, observed IP, and redacted error. Do not blindly retry. Use an already configured, authorized `remote-api` route if available; otherwise ask the user to correct the whitelist. Retry only after that condition changes.
+5. HTTP 401/403 alone does not prove an IP issue. Inspect the returned error; distinguish credentials, access-token expiry, permissions, network failures and invalid IP. Do not expose credential-bearing URLs in logs.
+6. Do not invoke Computer Use for diagnosis unless the user explicitly requests it.
 
 ## Stage 2: Image Generation
 
@@ -338,6 +319,7 @@ Read `$HOME/.baoyu-skills/baoyu-post-to-wechat/EXTEND.md` if present for local d
 ```bash
 bun "$MUFENG_WECHAT_SCRIPT" \
   <article.md> \
+  --account <account-alias> \
   --theme default \
   --author changyou \
   --cover <cover-url>
@@ -349,29 +331,35 @@ Before calling the script:
 - Ensure the required WeChat ending hook exists exactly once.
 - Include a title explicitly only if it cannot be reliably extracted from frontmatter or the first H1.
 
-If API publishing fails with IP/auth errors, check the current outbound IP and WeChat IP whitelist before retrying.
+After `draft/add` returns `media_id`, call `POST https://api.weixin.qq.com/cgi-bin/draft/get` with body `{"media_id":"<returned-media-id>"}` using the same account's access token and configured transport (including remote-api when selected). Keep tokens out of logs. Inspect returned title, author, body, cover reference and image references against the final article. Save a redacted verification record in the project.
+
+The current upload script does not perform this read-back check automatically; execute it separately. Do not create a duplicate draft when verification fails. Report “草稿上传成功，读取验证未完成” with the existing `media_id` and the concrete error.
+
+For explicit public-publication requests only, verify the draft first, then use the supported publication API and query its final status. A submission receipt is not publication success. If unsupported or denied, report that blocker while preserving the verified draft.
+
+Original declaration and platform topic tags unsupported by the selected API are pending manual settings, not prerequisites for draft upload.
 
 ### Fallback: HTML Publish
 
-Use the older HTML path only when needed. In this path, `--title` is mandatory every time. A publish call without `--title` can fail or create an untitled draft that needs manual repair.
+Use HTML only when Markdown rendering is unavailable or the user explicitly requests HTML. HTML does not bypass authentication, IP or permission errors. Use the same API script and selected account; sanitize HTML first and pass a non-empty title:
 
 ```bash
-# Correct form — always include --title:
-bun run wechat-publish \
+bun "$MUFENG_WECHAT_SCRIPT" \
+  ./output.html \
+  --account <account-alias> \
   --title "Article Title Here" \
-  --html "./output.html" \
-  --author "changyou"
-
-# WRONG — missing --title:
-bun run wechat-publish --html "./output.html"   # DO NOT DO THIS
+  --author changyou \
+  --cover <cover-url>
 ```
 
+Read back and report the draft through API as in the Markdown path.
+
 Failure modes:
-- [ ] Missing `--title` → draft created with empty title; must manually fix in WeChat MP backend
+- [ ] Missing `--title` → validate before upload; if an incorrect draft already exists, correct that draft through a supported API or report the issue, rather than creating a duplicate
 - [ ] Title contains special characters (`<`, `>`, `"`) → escape or strip before passing
 - [ ] `npx` used instead of `bun` → nvm/node conflicts; always use `bun`
-- [ ] Draft created but not published → check if publish step is separate from draft upload; WeChat API has two calls: `addDraft` then `freePublish.submit`
-- [ ] Article appears in draft list but not published → `freePublish.submit` may not have been called, or account lacks publish permission (requires 100+ followers for some account types)
+- [ ] Draft created but not publicly published → expected for the default draft workflow. Do not automatically call `freepublish/submit`.
+- [ ] Explicit public publication fails → inspect the actual permission/error response; do not assume a fixed follower threshold.
 - [ ] Publish succeeds but images missing → image URLs were not publicly accessible at publish time; verify GitHub raw URLs return 200 before calling publish
 
 ---
@@ -387,12 +375,12 @@ Run through this in order before every publish:
 - [ ] **Cover**: imagegen 只生成无文字背景；标题关键词用 HTML/CSS 或后期 overlay；生成图不得包含中文、logo、假 UI、假代码、人脸、手、机器人
 - [ ] **Frontmatter**: Markdown has `title`, `slug`, `author`, `date`, `category`, `summary`, `tags`, and `coverImage`
 - [ ] **Ending**: 结尾有主题相关 hook，且固定品牌 follow block 只出现一次
-- [ ] **Original**: 已开启原创标识
-- [ ] **Tags**: 已添加 2-3 个相关话题标签（#人工智能 等）
-- [ ] **Timing**: 发布时间在 20:00-22:00 或 12:00-13:00 工作日
+- [ ] **Original**: 已设置并验证，或明确记录为待手动设置（不阻塞草稿上传）
+- [ ] **Tags**: 已设置并验证，或列出建议话题标签并记录为待手动设置（不阻塞草稿上传）
+- [ ] **Timing**: 草稿随时上传；正式发布时间仅按用户明确要求处理
 
 **Technical:**
-- [ ] **IP**: Current outbound IP is whitelisted in WeChat MP backend
+- [ ] **IP**: Egress IP recorded where available; API error inspected without requiring backend UI pre-check
 - [ ] **Images**: Generated with Google (primary) or DashScope (fallback) only when deterministic visuals are not better
 - [ ] **Images**: AI-look filter passed; no neon/circuits/particles/holograms/fake UI/fake code/garbled text/glossy 3D poster style
 - [ ] **Images**: Uploaded to `mf-blog/blogPictures/main/images/<article-slug>`; raw HTTPS URLs verified with `curl -I <url>` returning 200
@@ -400,7 +388,7 @@ Run through this in order before every publish:
 - [ ] **HTML fallback**: If HTML publishing is used, SVG blocks and `<a>`, `<script>`, `<style>`, `<iframe>` tags are sanitized
 - [ ] **Command**: `bun` used (not `npx`)
 - [ ] **Command**: HTML fallback includes non-empty `--title`; Markdown path has extractable frontmatter title or H1
-- [ ] **Verify**: Draft visible in WeChat MP backend before triggering publish
+- [ ] **Verify**: `draft/get` on the selected account confirms the uploaded draft; report read-back failures separately and do not duplicate uploads
 
 ---
 
@@ -409,10 +397,10 @@ Run through this in order before every publish:
 | Stage | Key Rule | Common Mistake |
 |-------|----------|----------------|
 | Content strategy | 标题 18-26 字 + AI 热词前置；前 150 字直给价值；结尾引导"在看" | 用标题党措辞；从背景铺垫开篇 |
-| Timing | 工作日 20:00-22:00 发布 | 周一早晨或节假日发 |
-| IP check | Do before any API call | Assuming IP hasn't changed |
+| Timing | 草稿随时上传；时段建议需账号数据验证 | 为等待推荐时段阻塞草稿上传 |
+| IP check | 记录出口 IP，按实际 API 错误排查 | 强制打开后台，或把所有 401/403 当成白名单错误 |
 | Image gen | 封面只生成无文字背景；正文优先截图/图解/代码截图；通过 AI-look filter | 用霓虹、电路、粒子、假 UI 做科技海报 |
 | Frontmatter | `slug/category/summary/tags/coverImage` present before publishing | Only putting summary/tags in body |
 | GitHub upload | Fixed `mf-blog/blogPictures` path, helper script, HTTPS raw URL | Reusing filename manually → 422 error |
 | HTML sanitize | Fallback only; strip SVG + `<a>` tags | Pre-converting Markdown unnecessarily |
-| Publish | Prefer direct Markdown with `wechat-api.ts`; use `bun`; enable 原创 + 话题标签 | Using HTML path by default; forgetting 原创 mark |
+| Publish | Markdown + API 上传草稿；同账号 `draft/get` 验证 | 默认走浏览器；把草稿上传说成正式发布；把手动设置当成上传阻塞项 |

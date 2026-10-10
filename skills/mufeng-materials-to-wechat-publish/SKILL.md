@@ -341,21 +341,27 @@ python3 "$SKILL_DIR/scripts/upload_github_images.py" \
    - Use concise alt text that describes the real artifact or idea, not `image1`.
    - Preserve existing user content and formatting.
 
-8. Publish to WeChat Official Account.
+8. Upload and verify a WeChat Official Account draft.
    - Read `$HOME/.baoyu-skills/baoyu-post-to-wechat/EXTEND.md` if present for defaults.
-   - Prefer API publishing unless the user or config chooses browser publishing.
+   - Follow `mufeng-wechat-publish-full` for API draft upload and verification. “发布到公众号” defaults to a draft, not public publication or mass sending.
+   - Use API; do not open the backend or invoke browser automation/Computer Use unless the user explicitly requests browser operation. A saved browser preference or an API error alone does not authorize switching.
+   - Resolve the requested account from local configuration and pass `--account <account-alias>`; do not fall back to another account when credentials are missing.
    - Use the existing baoyu script directly:
 
 ```bash
 bun "$MUFENG_WECHAT_SCRIPT" \
   <article.md> \
+  --account <account-alias> \
   --theme default \
   --author changyou \
   --cover <cover-url>
 ```
 
    - Always include a title if it cannot be reliably extracted from frontmatter or the first H1.
-   - If API publishing fails with IP/auth errors, check the current outbound IP and WeChat IP whitelist before retrying.
+   - Record outbound IP where possible, then inspect actual API errors. Do not require a backend whitelist pre-check. On explicit invalid-IP errors (such as `40164`), stop blind retries until the whitelist or configured route changes; HTTP 401/403 alone does not prove an IP issue.
+   - After `draft/add`, separately call `draft/get` with the returned `media_id`, using the same account and transport. Verify title, author, body, cover and image references; save a redacted record. On read-back failure, preserve the ID and report upload success separately without creating a duplicate draft.
+   - Original declaration and platform topic tags unsupported by the API remain pending manual settings and do not block upload. Frontmatter tags are not platform topic tags.
+   - Report local article completion, draft upload, read-back verification and public publication separately. Only execute public publication or mass sending when explicitly requested; verify its final status.
 
 ## Pre-Publish Evidence Checklist
 

@@ -24,7 +24,7 @@ Claude Code：
 
 运行脚本前，将 shell 变量 `SKILL_DIR` 设为实际安装目录（包含本文件和 `SKILL.md` 的目录）。相对资源路径均以该目录为准。
 
-面向微信公众号的完整发布工作流 skill。它覆盖从文章策略、Markdown 元数据、封面和配图、GitHub 图床上传，到微信 API 发布和 HTML 兜底发布的全过程。
+面向微信公众号的完整发布工作流 skill。它覆盖从文章策略、Markdown 元数据、封面和配图、GitHub 图床上传，到微信 API 草稿上传、读取验证和 HTML 兜底的全过程。默认不正式发布或群发。
 
 `SKILL.md` 是给 agent 执行时读取的详细规则；本 README 是给人快速理解和维护用的入口说明。
 
@@ -44,7 +44,10 @@ Claude Code：
 - 统一使用同一个 `article-slug`，贯穿本地图片目录、GitHub 远程目录、frontmatter 和完成报告。
 - 图片固定上传到 `mf-blog/blogPictures` 的 `main` 分支。
 - 生成式图片主要用于无文字封面背景；正文优先使用真实截图、确定性图表、代码截图。
-- 发布前先确认当前出口 IP 已加入微信公众号后台 IP 白名单。
+- 默认全程使用 API，不打开公众号后台或调用 Computer Use；只有用户明确要求浏览器操作时才使用。
+- “发布到公众号”默认是上传草稿箱。只有明确要求“正式发布”或“群发”才进入公开发布流程。
+- 先记录出口 IP，再按实际 API 错误排查；无需预先打开后台检查白名单。
+- 上传后用同账号 `draft/get` 验证。原创标识和平台话题标签若 API 不支持，记录为待手动设置，不阻塞上传。
 
 ## 目录结构
 
@@ -62,7 +65,7 @@ mufeng-wechat-publish-full/
 - `python3`：用于运行图片上传 helper。
 - `gh`：GitHub CLI，且已登录有权限写入 `mf-blog/blogPictures`。
 - 微信公众号 API 凭据和本机默认配置应已在本地发布脚本环境中可用。
-- 当前出口 IP 已配置到微信公众号后台：
+- API 请求的实际出口 IP 需符合白名单配置；无需预先打开后台核对。可先记录本机出口 IP：
 
 ```bash
 curl -s https://api.ipify.org
@@ -78,7 +81,8 @@ curl -s https://api.ipify.org
 6. 将 Markdown 中的本地图片路径替换为 GitHub raw HTTPS URL。
 7. 检查结尾互动 hook 和固定关注文案。
 8. 用 Markdown 直发微信。
-9. 到微信公众号后台确认草稿和发布状态。
+9. 用同账号 API `draft/get` 读取返回的 `media_id`，核对标题、正文、封面和图片引用。
+10. 分别报告文章完成、草稿上传、读取验证和正式发布状态；默认到验证草稿即完成。
 
 ## Frontmatter 模板
 
@@ -132,10 +136,13 @@ python3 "$SKILL_DIR/scripts/upload_github_images.py" \
 ```bash
 bun "$MUFENG_WECHAT_SCRIPT" \
   <article.md> \
+  --account <account-alias> \
   --theme default \
   --author changyou \
   --cover <cover-url>
 ```
+
+沐风iOS 使用 `--account mufeng-ios`。这个脚本只调用 `draft/add`，读取验证需要另行执行。验证失败时保留已有 `media_id`，不重复上传草稿。
 
 发布前确认：
 
@@ -160,7 +167,8 @@ HTML fallback 发布时必须显式传 `--title`。
 
 ## 常见故障
 
-- `401` / `403`：优先检查 IP 白名单，不要盲目重试 API。
+- 明确的无效 IP 错误（如 `40164`）：报告账号、出口 IP 和脱敏错误，等待白名单修复，或使用已配置的授权 remote-api 路径。
+- HTTP `401` / `403`：检查具体返回错误，不能直接断定是 IP 白名单问题。
 - GitHub API `422`：远程文件已存在；让 helper 自动追加时间戳，或使用 `--overwrite`。
 - 微信草稿图片缺失：先用 `curl -I <raw-url>` 确认图片返回 `200`。
 - 封面出现乱码中文或假 UI：不要让 imagegen 生成文字；用 HTML/CSS 或后期工具叠字。

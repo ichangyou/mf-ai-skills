@@ -29,3 +29,7 @@ Claude Code：
 ```
 /mufeng-materials-to-wechat-publish
 ```
+
+## 发布结果与验证
+
+默认通过 API 上传指定公众号的草稿箱，并用同账号 API 读取验证，不自动使用浏览器或 Computer Use。只有明确要求“正式发布”或“群发”才进入公开发布流程。原创标识和平台话题标签若接口不支持，列为待手动设置，不阻塞草稿上传。读取验证失败时保留已有草稿并报告，不重复上传。具体规则见 [完整发布 skill](../mufeng-wechat-publish-full/SKILL.md)。
