@@ -1,5 +1,7 @@
 # Article Templates
 
+Use these as optional scaffolding under `../SKILL.md`'s length and code budget: normally 1000–3000 字, never over 4000 字. Omit code sections when explanations or steps suffice; these templates do not require code or a complete implementation.
+
 ## Standard Technical Article
 ```markdown
 # [标题] - [核心关键词]
@@ -17,7 +19,7 @@
 ### 解决方案
 - 方案概述
 - 实现步骤
-- 代码示例（可运行）
+- 必要时展示最小代码片段，否则用文字或步骤解释
 
 ### 最佳实践
 - 实战经验
@@ -46,15 +48,14 @@
 
 ## 步骤 1: [第一步]
 - 说明
-- 代码示例
+- 操作说明；仅在精确语法不可替代时附最小片段
 - 运行结果
 
 ## 步骤 2: [第二步]
 ...
 
-## 完整代码
-- 可运行的完整代码
-- GitHub 仓库链接（如有）
+## 实现资源（按需）
+- 完整实现放项目文件或仓库链接，不在文章内展开
 
 ## 下一步
 - 功能扩展建议

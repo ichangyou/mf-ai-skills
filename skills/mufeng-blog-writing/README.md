@@ -30,7 +30,7 @@ Claude Code：
 
 ### 功能描述
 
-面向 mufeng.blog 的技术博客写作助手。按 Joey 友好专业的写作风格输出技术文章，涵盖 iOS（Swift/Objective-C）、Java/Spring Boot、Vue.js、JavaScript/TypeScript 等技术栈。输出含可运行代码示例（附中文注释）、SEO 元数据，默认保存为本地 Markdown 文件。
+面向 mufeng.blog 的技术博客写作助手。按 Joey 友好专业的写作风格输出技术文章，涵盖 iOS（Swift/Objective-C）、Java/Spring Boot、Vue.js、JavaScript/TypeScript 等技术栈。文章通常为 1000–3000 字，最多 4000 字；默认用文字解释，仅在必要时附最小代码片段及中文说明，输出含 SEO 元数据，默认保存为本地 Markdown 文件。
 
 ### 使用方式
 
@@ -45,7 +45,7 @@ Claude Code：
 ```
 
 ```
-/mufeng-blog-writing Spring Boot 整合 Redis 缓存 — 教程类，包含完整代码
+/mufeng-blog-writing Spring Boot 整合 Redis 缓存 — 教程类，讲清缓存机制与操作步骤
 ```
 
 ```
@@ -58,7 +58,7 @@ Claude Code：
 
 1. 确认话题、文章类型（技术分享 / 教程 / 问题排查）、目标技术栈和深度
 2. 依据 `references/templates.md` 选择对应文章结构
-3. 按 `references/identity.md` 风格撰写正文，确保代码可运行
+3. 按 `references/identity.md` 风格撰写正文，检查字数和代码必要性
 4. 使用 `references/seo-checklist.md` 生成优化标题、摘要（150-200 字）、标签（4-8 个）
 5. 追加落款（日期、地点）
 6. 将生成文章保存为 `.md` 文件到当前工作目录
@@ -92,7 +92,7 @@ YYYY.MM.DD HH:mm
 
 ### 注意事项
 
-- 代码示例附中文注释，保证可直接运行
+- 能不用代码就不用；必要片段说明用途、前提和结果，完整实现放链接
 - SEO 检查清单自动执行，不需要手动触发
 - 引用文件：`references/identity.md`（风格）、`references/templates.md`（模板）、`references/code-standards.md`（代码规范）
 
@@ -102,7 +102,7 @@ YYYY.MM.DD HH:mm
 
 ### Description
 
-Technical blog writing assistant for mufeng.blog. Produces articles in Joey's friendly, professional tone, covering iOS (Swift/Objective-C), Java/Spring Boot, Vue.js, and JavaScript/TypeScript. Output includes runnable code examples with Chinese comments, SEO metadata, and is saved as a local Markdown file by default.
+Technical blog writing assistant for mufeng.blog. Produces articles in Joey's friendly, professional tone, covering iOS (Swift/Objective-C), Java/Spring Boot, Vue.js, and JavaScript/TypeScript. Articles normally use 1000–3000 visible characters, with a hard ceiling of 4000. Prefer explanations without code; include only indispensable snippets. Output includes SEO metadata, and is saved as a local Markdown file by default.
 
 ### Usage
 
@@ -117,7 +117,7 @@ Technical blog writing assistant for mufeng.blog. Produces articles in Joey's fr
 ```
 
 ```
-/mufeng-blog-writing Spring Boot with Redis caching — tutorial style with full code
+/mufeng-blog-writing Spring Boot with Redis caching — tutorial style explaining the mechanism and steps
 ```
 
 ```
@@ -130,7 +130,7 @@ If the topic description is incomplete, the skill will ask clarifying questions 
 
 1. Confirm topic, article type (tech share / tutorial / troubleshooting), target stack, and depth
 2. Select a structure template from `references/templates.md`
-3. Draft the article in the style defined by `references/identity.md`, ensuring code is runnable
+3. Draft the article in the style defined by `references/identity.md`, checking length and the necessity of any code
 4. Generate an optimized title, summary (150-200 Chinese chars), and tags (4-8) using `references/seo-checklist.md`
 5. Append footer (timestamp and location)
 6. Save the generated article as a `.md` file in the current working directory
@@ -164,6 +164,6 @@ YYYY.MM.DD HH:mm
 
 ### Notes
 
-- Code examples include Chinese comments and are verified runnable
+- Omit dispensable code; explain the purpose, prerequisites and results of necessary snippets, and link complete implementations
 - SEO checklist runs automatically — no manual trigger needed
 - Reference files: `references/identity.md` (style), `references/templates.md` (templates), `references/code-standards.md` (code conventions)

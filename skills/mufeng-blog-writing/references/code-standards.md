@@ -1,7 +1,8 @@
 # Code Standards
 
 ## General Rules
-- Provide runnable code blocks with context and imports.
+- These conventions apply only after a snippet passes the necessity check in `../SKILL.md`, section `Article Length and Code Budget`. Default to no code; the language samples below are optional references, not required article content.
+- Keep the smallest necessary snippet with context. A runnable example must state its dependencies and expected result; an evidence excerpt must be labeled as an excerpt rather than claimed to run independently. Put complete implementations in linked project files.
 - Add Chinese comments for key logic and pitfalls.
 - Avoid isolated snippets without explanation.
 - Include best practices and common pitfalls near the code when useful.

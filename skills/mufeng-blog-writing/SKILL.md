@@ -1,22 +1,28 @@
 ---
 name: mufeng-blog-writing
-description: Chinese technical blog writing for mufeng.blog with Joey's tone, clear problem-solution structure, runnable code examples, and publish-ready SEO metadata. Use when drafting or revising technical posts, tutorials, or troubleshooting articles, especially for iOS (Swift/Objective-C), Java/Spring Boot, Vue.js, or JavaScript/TypeScript.
+description: Chinese technical blog writing for mufeng.blog with Joey's tone, clear problem-solution structure, concise explanations, minimal code only when necessary, and publish-ready SEO metadata. Use when drafting or revising technical posts, tutorials, or troubleshooting articles, especially for iOS (Swift/Objective-C), Java/Spring Boot, Vue.js, or JavaScript/TypeScript.
 compatibility: "Codex and Claude Code. Current conversation and any task-specific source materials; subagents are optional unless the workflow requires independent execution."
 ---
 
 # mufeng-blog-writing
 
 ## Overview
-Produce mufeng.blog technical articles in Joey's friendly, professional tone. Keep structure clear, include practical code with Chinese comments, and deliver title, summary, and tags ready for publishing. By default, save the generated article as a Markdown file in the current working directory.
+Produce mufeng.blog technical articles in Joey's friendly, professional tone. Keep structure clear, prefer explanations without code, stay within the article length budget below, and deliver title, summary, and tags ready for publishing. By default, save the generated article as a Markdown file in the current working directory.
 
 ## Workflow
 1. Define the reader and single reader outcome using `Reader Understanding and First Principles` below. Infer reasonable prerequisites and article type from the request and materials; state the assumption briefly and ask only when missing information materially changes the article.
 2. Select the structure and depth for an introduction, tutorial, deep analysis, or troubleshooting article. Use `references/templates.md` as optional scaffolding, not mandatory headings.
-3. Draft the content. Follow `references/identity.md`, ensure code is runnable and contextualized, and include best practices and pitfalls where relevant. For a technical-subject article, also satisfy the `Technical Explainer Contract` below while drafting.
+3. Draft the content within `Article Length and Code Budget` below. Follow `references/identity.md`; include code only when necessary, with accurate context and verification appropriate to the snippet, and include best practices and pitfalls where relevant. For a technical-subject article, also satisfy the `Technical Explainer Contract` below while drafting.
 4. Add metadata. Provide an optimized title, a 150-200 Chinese character summary, and 4-8 tags using `references/seo-checklist.md`.
 5. Append signature footer. Unless the user explicitly asks to skip, add a footer block at the end of the article with timestamp and location only. Do not add any AI-assist, AI-generated, or model-use declaration.
-6. Run the comprehension gate below alongside `references/seo-checklist.md`. Check accuracy and readability separately; fix failures before delivery.
+6. Run the comprehension gate below alongside `references/seo-checklist.md`. Check accuracy and readability separately, count the final article, and review the necessity of every code-like snippet; fix failures before delivery.
 7. Save output file. Unless the user explicitly asks not to save, write the final Markdown article to the current working directory as a `.md` file.
+
+## Article Length and Code Budget
+
+- **篇幅硬上限：最终文章不得超过 4000 字，通常控制在 1000–3000 字。** 简单主题可少于 1000 字，不为凑字数扩写；“专业、详尽、深度分析”均需在此预算内完成。选定一个读者任务，优先保留关键概念、第一性原理的因果链、贯穿案例与影响判断的边界；删掉重复解释和旁支，完整工程与扩展材料放项目文件或参考链接，不用附录绕过上限。
+- **默认不写代码，能用清晰文字、操作步骤或有依据的图示说明，就不用代码。** 只有读者完成本文任务必须依赖精确语法，或关键判断必须展示具体实现证据时，才保留最小必要片段，并说明它解决什么问题和如何判断结果。教程不自动要求代码；命令、配置、伪代码、JSON 和日志片段也须通过同一必要性判断。完整实现优先链接项目文件，不把代码截图当作规避方式。
+- **交付前实际统计并检查。** 统一按最终可见文章的非空白字符保守计数：中文、英文字符、数字和标点均计入；标题、小标题、可见摘要、代码/命令/配置、图注、参考资料及落款均计入。排除 YAML 元数据、Markdown 格式标记和不显示的链接目标；若渲染器把 URL 展示为参考文字，则计入。记录计数口径、总字数、保留的代码类片段数量与必要理由。超过 4000 字必须压缩后重新统计；3001–4000 字需说明不可删减的内容。无代码时明确记录 0，不得把未统计说成已通过。
 
 ## Reader Understanding and First Principles
 
@@ -50,7 +56,7 @@ Check each claim against source material or an actual experiment. Do not invent 
 - Start with a YAML frontmatter block containing `title`, `author: changyou`, and `date: YYYY-MM-DD` (today's date).
 - Then `# 标题` heading.
 - Include `摘要` and `标签` blocks before the正文 if they are not provided.
-- Use fenced code blocks with language tags.
+- Only for necessary code snippets, use fenced code blocks with language tags; no code block is required by default.
 - Append a default footer block at the end of the article (unless user says not to):
   - Line 1: `YYYY.MM.DD HH:mm`
   - Line 2: `沪 · 赵巷` (or user-provided location)

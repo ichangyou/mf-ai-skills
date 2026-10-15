@@ -20,6 +20,7 @@ Read [references/platforms.md](references/platforms.md) before generating images
 - Use this skill for the materials-to-article workflow. If the user already has a finished Markdown article and only needs image upload, formatting, API publishing, or publish recovery, use `mufeng-wechat-publish-full` instead.
 - Start from the materials in the requested directory, not from a blank topic. Generate the article first with the `mufeng-blog-writing` skill's article-writing conventions, with this skill's frontmatter requirements taking precedence.
 - Apply all seven rules in `mufeng-blog-writing/SKILL.md`, section `Reader Understanding and First Principles`: define reader and outcome, select article type, explain terminology, use a continuous case, admit only relevant body details, pass the comprehension gate, and analyze technical first principles in depth. These rules govern content depth and readability throughout this workflow.
+- Apply `mufeng-blog-writing/SKILL.md`, section `Article Length and Code Budget`: normally 1000–3000 字 and never over 4000 字; default to no code and retain only indispensable snippets. Technical depth and first-principles analysis must fit within this budget. Use its visible-character counting method for the final rendered article.
 - Every generated Markdown article must include SEO/GEO-friendly YAML frontmatter with `title`, `slug`, `author`, `date`, `category`, `summary`, `tags`, and later `coverImage`.
 - Keep `summary` and `tags` only in YAML frontmatter. Do not add visible `摘要` headings/blocks or `标签` lines/blocks to the article body. This rule overrides `mufeng-blog-writing`'s default visible `摘要` and `标签` blocks.
 - Research current WeChat search intent before drafting. Choose one primary query and 3-6 supporting terms from verifiable current evidence; if live WeChat search evidence is unavailable, label the proxy source and uncertainty instead of inventing demand.
@@ -370,6 +371,8 @@ bun "$MUFENG_WECHAT_SCRIPT" \
 
 Do not publish until this checklist has been checked against the final Markdown:
 
+- [ ] Final visible article has been counted using the writing skill's method: normally 1000–3000 字, at most 4000 字; 3001–4000 字 has a concrete content justification. No appendix or code screenshot bypasses the budget.
+- [ ] Every code, command, configuration, pseudocode or log excerpt has a reader-task or evidence necessity; explanations replace dispensable snippets, and complete implementations are linked outside the article.
 - [ ] SEO/GEO frontmatter includes `title`, `slug`, `author`, `date`, `category`, `summary`, `tags`, and uploaded `coverImage`.
 - [ ] A dated search brief records the primary intent, primary query, 3-6 supporting terms, evidence source, and any proxy-data limitation.
 - [ ] The title, opening, at least one useful H2, and relevant body sections map keywords naturally; no keyword list, stuffing, or mechanical repetition remains.
@@ -414,6 +417,7 @@ Report:
 - Frontmatter category, summary, and tags.
 - Search brief: research date, evidence source, primary intent, primary query, supporting terms, reader outcome, and any proxy-data limitation.
 - Keyword mapping result: title, opening, H2, and body placements; confirm no stuffing or visible keyword/tag block.
+- Length and code check: report counting method, final total, whether the 1000–3000 字 target and 4000 字 ceiling are met, and the number and necessity of retained code-like snippets (0 when none).
 - Digest check: report the `summary` character count and confirm it is within 90-120 characters.
 - Quality-gate results: originality evidence, account-fit classification, title-integrity result, and low-quality-content result.
 - Reader profile, assumed prerequisites, primary article type, single reader outcome, and comprehension-gate result; distinguish editorial self-review from any actual reader testing.

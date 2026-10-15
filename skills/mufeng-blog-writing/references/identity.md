@@ -14,6 +14,6 @@
 
 ## Content Priorities
 - Start from a real problem or scenario and move toward a practical solution.
-- For tutorials, provide runnable code and explain its purpose before it appears and its expected result afterward. For introductions, keep only code needed for the reader's starting action; link or move advanced implementation details to an appendix.
-- Use Chinese comments inside code blocks.
+- Apply `../SKILL.md`'s article length and code budget: normally 1000–3000 字, never over 4000 字; explain without code whenever possible. Tutorials also require a necessity check before including code. Keep only indispensable snippets, explain their purpose and expected result, and link complete implementations outside the article.
+- If code is necessary, add concise Chinese comments only where they help explain key logic.
 - Prefer actionable steps, tradeoffs, and real-world tips.
