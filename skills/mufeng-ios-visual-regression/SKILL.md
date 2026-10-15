@@ -95,6 +95,13 @@ After you modify any UI code, BEFORE reporting "done":
   and gray (99,99,99) on others, a 0.208% swing. Coordinates are
   device-specific: re-measure after changing `simulator_name`. Anything that
   really changes inside an ignored rect goes undetected.
+- **Failed shots fail the run.** A failed `simctl launch` or `simctl io
+  screenshot` (e.g. the simulator shut down mid-run) makes `capture` exit
+  non-zero with the list of failed shots. `check` then stops before diffing,
+  so stale files left in `current/` can never pass as a clean result.
+  `baseline` captures into `VisualRegression/.baselines-staging/` and moves the
+  shots into `baselines/` only when every shot succeeded; on any failure or
+  dead frame, `baselines/` is left exactly as it was.
 - **Dead-frame sentinel.** Capture races the app: shooting before it is
   foregrounded yields the springboard wallpaper, shooting before it renders
   yields a flat colour. Both used to be written into `baselines/` silently and

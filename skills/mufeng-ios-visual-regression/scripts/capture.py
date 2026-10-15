@@ -18,6 +18,7 @@ import glob
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -261,8 +262,15 @@ def _dead_frame_reason(path):
 
 def capture_all(project, cfg, udid, app, mode):
     bid = cfg["bundle_id"]
-    root = os.path.join(project, "VisualRegression",
-                        "baselines" if mode == "baseline" else "current")
+    vr = os.path.join(project, "VisualRegression")
+    final_root = os.path.join(vr, "baselines" if mode == "baseline" else "current")
+    # baseline 先写进暂存目录，全部成功才落进 baselines/：中途失败过去会留下
+    # 一半新一半旧的基线，退出码再非 0 也救不回来。
+    if mode == "baseline":
+        root = os.path.join(vr, ".baselines-staging")
+        shutil.rmtree(root, ignore_errors=True)
+    else:
+        root = final_root
     langs = resolve_languages(project, cfg)
     styles = cfg.get("styles", ["light"])
     settle = float(cfg["settle_seconds"])
@@ -270,8 +278,18 @@ def capture_all(project, cfg, udid, app, mode):
     # ignored（simctl 默认）存的是未遮罩的原始帧，灵动岛时有时无，页面有持续动画时尤其明显；
     # black 把圆角和灵动岛固定画黑，截图才稳定。默认保持 ignored，避免已有项目的基线全部失效
     mask = cfg.get("screenshot_mask", "ignored")
-    shot = lambda dst: run(["xcrun", "simctl", "io", udid, "screenshot", f"--mask={mask}", dst])
+    def shot(dst):
+        # 先删旧文件：截图命令失败时不能让上一轮的图冒充这一轮的结果。
+        if os.path.exists(dst):
+            os.remove(dst)
+        r = run(["xcrun", "simctl", "io", udid, "screenshot", f"--mask={mask}", dst])
+        if r.returncode != 0 or not os.path.exists(dst):
+            return (r.stderr or "no file written").strip()
+        return None
     dead = []
+    # 启动或截图失败。过去只打印一行就 continue，check 会拿 current/ 里上一轮的
+    # 旧图去比对并报"通过"，baseline 则静默产出不完整的基线。
+    failed = []
 
     # 顺序有讲究：重启会清掉状态栏 override 也会卸掉运行中的一切，
     # privacy reset 又要求 app 已安装。
@@ -292,13 +310,21 @@ def capture_all(project, cfg, udid, app, mode):
                 run(["xcrun", "simctl", "terminate", udid, bid])
                 launch = ["xcrun", "simctl", "launch", udid, bid,
                           "-VRScreen", sid, "-VRLang", lang, "-VRStyle", style]
+                name = f"{lang}/{style}/{sid}"
+                dst = os.path.join(out_dir, f"{sid}.png")
+                if os.path.exists(dst):
+                    os.remove(dst)
                 r = run(launch)
                 if r.returncode != 0:
-                    print(f"  ! launch failed {lang}/{style}/{sid}: {r.stderr.strip()}")
+                    failed.append((name, f"launch: {r.stderr.strip()}"))
+                    print(f"  ! launch failed {name}: {r.stderr.strip()}")
                     continue
                 time.sleep(settle)
-                dst = os.path.join(out_dir, f"{sid}.png")
-                shot(dst)
+                err = shot(dst)
+                if err is not None:
+                    failed.append((name, f"screenshot: {err}"))
+                    print(f"  ! screenshot failed {name}: {err}")
+                    continue
 
                 # 抓到废帧就多等一轮重来；竞态基本一次重试即可消除
                 reason = _dead_frame_reason(dst) if check_dead else None
@@ -307,10 +333,15 @@ def capture_all(project, cfg, udid, app, mode):
                         break
                     print(f"  ~ retry {attempt} {lang}/{style}/{sid}: {reason}")
                     run(["xcrun", "simctl", "terminate", udid, bid])
-                    if run(launch).returncode != 0:
+                    r = run(launch)
+                    if r.returncode != 0:
+                        reason = f"relaunch failed: {r.stderr.strip()}"
                         break
                     time.sleep(settle * (1 + attempt))
-                    shot(dst)
+                    err = shot(dst)
+                    if err is not None:
+                        reason = f"screenshot failed: {err}"
+                        break
                     reason = _dead_frame_reason(dst)
 
                 total += 1
@@ -322,15 +353,34 @@ def capture_all(project, cfg, udid, app, mode):
     run(["xcrun", "simctl", "terminate", udid, bid])
     print(f"[capture] wrote {total} screenshots under {root}")
 
+    if failed:
+        print(f"\n[capture] {len(failed)} 张截图失败（启动或截图命令出错）：")
+        for name, reason in failed:
+            print(f"  - {name}: {reason}")
     if dead:
         print(f"\n[capture] {len(dead)} 张废帧，重试后仍未渲染出界面：")
         for name, reason in dead:
             print(f"  - {name}: {reason}")
-        print("[capture] 中止：废帧写进 baselines 会长期污染回归结果。"
-              "可调高 config.json 的 settle_seconds 后重跑。")
+        print("[capture] 可调高 config.json 的 settle_seconds 后重跑。")
+    if failed or dead:
+        if mode == "baseline":
+            shutil.rmtree(root, ignore_errors=True)
+            print("[capture] 中止：baselines/ 未做任何改动。")
+        else:
+            print("[capture] 中止：current/ 不完整，不生成比对报告。")
         sys.exit(1)
 
-    return root
+    if mode == "baseline":
+        for dirpath, _, files in os.walk(root):
+            rel = os.path.relpath(dirpath, root)
+            for f in files:
+                dest_dir = os.path.join(final_root, rel)
+                os.makedirs(dest_dir, exist_ok=True)
+                os.replace(os.path.join(dirpath, f), os.path.join(dest_dir, f))
+        shutil.rmtree(root, ignore_errors=True)
+        print(f"[capture] staged shots moved into {final_root}")
+
+    return final_root
 
 
 def main():
