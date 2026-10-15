@@ -7,7 +7,7 @@ Sources (no account or key needed):
   - Keyword search:   itunes.apple.com/search?term=..&entity=software&country=cc
   - Reviews:          itunes.apple.com/{cc}/rss/customerreviews/page=P/id=X/sortby=S/json  (pages 1-10, 50 each)
 
-Responses are cached for 24h under $MUFENG_AOF_CACHE (default ~/.cache/mufeng-app-opportunity-finder).
+Responses are cached for 24h under $MUFENG_IAO_CACHE (default ~/.cache/mufeng-ios-app-opportunity).
 
 Usage:
     asdata.py scan     --country us --genres 6007,6013 --out DIR
@@ -32,12 +32,12 @@ from urllib.request import Request, urlopen
 FEEDS = {"free": "topfreeapplications", "paid": "toppaidapplications", "grossing": "topgrossingapplications"}
 REVIEW_SORTS = ("mostrecent", "mosthelpful")
 CACHE_TTL = 24 * 3600
-USER_AGENT = "Mozilla/5.0 (Macintosh) mufeng-app-opportunity-finder/1.0"
+USER_AGENT = "Mozilla/5.0 (Macintosh) mufeng-ios-app-opportunity/1.0"
 _last_request = 0.0
 
 
 def cache_dir():
-    return Path(os.environ.get("MUFENG_AOF_CACHE") or Path.home() / ".cache" / "mufeng-app-opportunity-finder")
+    return Path(os.environ.get("MUFENG_IAO_CACHE") or Path.home() / ".cache" / "mufeng-ios-app-opportunity")
 
 
 def fetch(url, use_cache=True, raw=False):

@@ -55,7 +55,7 @@ python3 scripts/install.py --platform both --skill mufeng-book-notes
 | iOS | [mufeng-ios-visual-regression](skills/mufeng-ios-visual-regression/README.md) | 多语言与明暗截图对比 | macOS + Xcode + Simulator、Python、Pillow、应用 harness |
 | 调试 | [mufeng-parallel-root-cause](skills/mufeng-parallel-root-cause/README.md) | 证伪式根因调查 | 日志和实验工具；并行需子代理 |
 | 研究 | [mufeng-stock-research](skills/mufeng-stock-research/README.md) | 股票研究与报告导出 | 网络检索；MCP 可选；导出需 Pandoc，PDF 需 Chrome/Chromium |
-| 研究 | [mufeng-app-opportunity-finder](skills/mufeng-app-opportunity-finder/README.md) | App Store 竞品差评与低竞争方向挖掘 | Python 3.10+、可访问 itunes.apple.com；无需账号 |
+| 研究 | [mufeng-ios-app-opportunity](skills/mufeng-ios-app-opportunity/README.md) | App Store 竞品差评与低竞争方向挖掘 | Python 3.10+、可访问 itunes.apple.com；无需账号 |
 
 生图、发布、阅读数据和历史会话的配置与限制，见 [兼容性文档](docs/compatibility.md)。
 
@@ -85,7 +85,7 @@ python3 -m venv .venv
 .venv/bin/python scripts/validate.py
 .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python -m unittest discover -s skills/mufeng-bilingual-storybook/tests -v
-.venv/bin/python -m unittest discover -s skills/mufeng-app-opportunity-finder/tests -v
+.venv/bin/python -m unittest discover -s skills/mufeng-ios-app-opportunity/tests -v
 ```
 
 Windows 使用 `.venv\Scripts\python.exe`。绘本 PDF 测试使用 macOS 默认字体。

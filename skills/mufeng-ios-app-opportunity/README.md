@@ -1,4 +1,4 @@
-# mufeng-app-opportunity-finder
+# 沐风 · iOS 需求挖掘（mufeng-ios-app-opportunity）
 
 支持 Codex 和 Claude Code。安装与更新见 [项目安装文档](https://github.com/ichangyou/mf-ai-skills/blob/main/docs/installation.md)。
 
@@ -9,16 +9,16 @@
 Codex：
 
 ```text
-$mufeng-app-opportunity-finder 帮我看美区效率类和健康类有什么机会
+$mufeng-ios-app-opportunity 帮我看美区效率类和健康类有什么机会
 ```
 
 Claude Code：
 
 ```text
-/mufeng-app-opportunity-finder 帮我看美区效率类和健康类有什么机会
+/mufeng-ios-app-opportunity 帮我看美区效率类和健康类有什么机会
 ```
 
-也可以直接分析竞品：`/mufeng-app-opportunity-finder 分析习惯追踪类应用的差评，中国区`。
+也可以直接分析竞品：`/mufeng-ios-app-opportunity 分析习惯追踪类应用的差评，中国区`。
 
 ## 依赖与执行范围
 
@@ -58,7 +58,7 @@ open work/report.html
 ## 测试
 
 ```bash
-python3 -m unittest discover -s skills/mufeng-app-opportunity-finder/tests -v
+python3 -m unittest discover -s skills/mufeng-ios-app-opportunity/tests -v
 ```
 
 测试使用离线样例数据，不访问网络。

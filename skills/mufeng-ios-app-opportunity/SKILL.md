@@ -1,5 +1,5 @@
 ---
-name: mufeng-app-opportunity-finder
+name: mufeng-ios-app-opportunity
 description: >-
   Mine App Store public data (category charts, app details, ratings, icons, screenshots,
   keyword search results and 1-2 star reviews) to find what users complain about in popular
@@ -22,7 +22,7 @@ compatibility: "Codex and Claude Code. Python 3.10+ (stdlib only) and network ac
 AOF="python3 $SKILL_DIR/scripts/asdata.py"
 ```
 
-工作目录：在当前项目下创建 `app-opportunity/<YYYYMMDD>-<地区>-<主题>/`，所有中间数据放在这里。缓存在 `~/.cache/mufeng-app-opportunity-finder`（可用环境变量 `MUFENG_AOF_CACHE` 改），24 小时有效。
+工作目录：在当前项目下创建 `app-opportunity/<YYYYMMDD>-<地区>-<主题>/`，所有中间数据放在这里。缓存在 `~/.cache/mufeng-ios-app-opportunity`（可用环境变量 `MUFENG_IAO_CACHE` 改），24 小时有效。
 
 ## 必须先说清的边界
 
