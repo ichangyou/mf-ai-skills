@@ -1,6 +1,6 @@
 # Codex 与 Claude Code 兼容性
 
-全部 16 个 skill 共用同一份正文，并提供两端入口。`compatibility` 元数据声明执行条件，不安装依赖，也不表示已完成端到端测试。
+全部 18 个 skill 共用同一份正文，并提供两端入口。`compatibility` 元数据声明执行条件，不安装依赖，也不表示已完成端到端测试。
 
 | 能力 | Codex | Claude Code | 缺失时 |
 |---|---|---|---|
