@@ -1,0 +1,4 @@
+interface:
+  display_name: "沐风 · App Builder"
+  short_description: "从产品想法生成可执行的项目规范、任务图与 MVP 开发循环"
+  default_prompt: "Use $mufeng-app-builder to turn my app idea into PRD, MVP scope, acceptance criteria, AGENTS.md, CLAUDE.md, DESIGN.md and a validated task graph, without writing feature code yet."

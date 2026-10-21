@@ -2,7 +2,7 @@
 
 面向 **Codex 和 Claude Code** 的开源技能集，覆盖内容创作、阅读整理、研发协作和应用检查。
 
-由沐风（Joey）维护，共 18 个 skill，涵盖写作与发布、阅读与复盘、思考与决策、iOS 工程和研究分析。
+由沐风（Joey）维护，共 19 个 skill，涵盖写作与发布、阅读与复盘、思考与决策、iOS 工程和研究分析。
 两端共用 `skills/` 中的同一份内容。
 生图、账号数据和发布需要额外配置工具与凭据。
 
@@ -57,6 +57,7 @@ python3 scripts/install.py --platform both --skill mufeng-book-notes
 | 研究 | [mufeng-stock-research](skills/mufeng-stock-research/README.md) | 股票研究与报告导出 | 网络检索；MCP 可选；导出需 Pandoc，PDF 需 Chrome/Chromium |
 | 研究 | [mufeng-ios-app-opportunity](skills/mufeng-ios-app-opportunity/README.md) | App Store 竞品差评与低竞争方向挖掘 | Python 3.10+、可访问 itunes.apple.com；无需账号 |
 | iOS | [mufeng-ios-app-naming](skills/mufeng-ios-app-naming/README.md) | App 英文名生成，以及 App Store、商标、域名、网站的五步查重 | Python 3.9+、可访问 App Store / USPTO / TMview / RDAP；网页检索工具；日本商标需手动查 |
+| 研发 | [mufeng-app-builder](skills/mufeng-app-builder/README.md) | 产品想法 → PRD、验收、AGENTS.md/CLAUDE.md、任务图，可选自主开发到 MVP | Python 3.9+；build 模式需目标技术栈工具链（iOS 需 macOS + Xcode） |
 
 生图、发布、阅读数据和历史会话的配置与限制，见 [兼容性文档](docs/compatibility.md)。
 
@@ -88,6 +89,7 @@ python3 -m venv .venv
 .venv/bin/python -m unittest discover -s skills/mufeng-bilingual-storybook/tests -v
 .venv/bin/python -m unittest discover -s skills/mufeng-ios-app-opportunity/tests -v
 .venv/bin/python -m unittest discover -s skills/mufeng-ios-app-naming/tests -v
+.venv/bin/python -m unittest discover -s skills/mufeng-app-builder/tests -v
 ```
 
 Windows 使用 `.venv\Scripts\python.exe`。绘本 PDF 测试使用 macOS 默认字体。
