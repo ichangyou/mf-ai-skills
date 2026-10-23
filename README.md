@@ -2,7 +2,7 @@
 
 面向 **Codex 和 Claude Code** 的开源技能集，覆盖内容创作、阅读整理、研发协作和应用检查。
 
-由沐风（Joey）维护，共 20 个 skill，涵盖写作与发布、阅读与复盘、思考与决策、iOS 工程和研究分析。
+由沐风（Joey）维护，共 21 个 skill，涵盖写作与发布、阅读与复盘、思考与决策、iOS 工程和研究分析。
 两端共用 `skills/` 中的同一份内容。
 生图、账号数据和发布需要额外配置工具与凭据。
 
@@ -50,6 +50,7 @@ python3 scripts/install.py --platform both --skill mufeng-book-notes
 | 复盘 | [mufeng-monthly-report](skills/mufeng-monthly-report/README.md) | 月度趋势与行动计划 | 当前对话或用户提供的月记录 |
 | 思考 | [mufeng-brainstorm](skills/mufeng-brainstorm/README.md) | 发散、筛选和反驳 | 子代理可选；缺少时注明顺序检查 |
 | 思考 | [mufeng-virtual-team](skills/mufeng-virtual-team/README.md) | CTO / 产品 / 用户多视角评审 | 功能描述与项目背景 |
+| 设计 | [mufeng-app-icon](skills/mufeng-app-icon/README.md) | App icon 概念、精修、多尺寸预览与平台适配 | Python + Pillow（预览）；生图工具可选；集成验证需 Xcode |
 | 设计 | [mufeng-ios-design](skills/mufeng-ios-design/README.md) | 原生 iOS UI 优化、App icon 与原创 logo，含实际验证 | 项目源码；原生验证需 macOS + Xcode；生图工具可选 |
 | 设计 | [mufeng-uxreview](skills/mufeng-uxreview/README.md) | UI/UX 评审 | 页面代码，必要时提供截图 |
 | iOS | [mufeng-ios-release-audit](skills/mufeng-ios-release-audit/README.md) | 上线审计与上线文案 | iOS 项目；编译需 macOS + Xcode |
@@ -91,6 +92,7 @@ python3 -m venv .venv
 .venv/bin/python -m unittest discover -s skills/mufeng-ios-app-opportunity/tests -v
 .venv/bin/python -m unittest discover -s skills/mufeng-ios-app-naming/tests -v
 .venv/bin/python -m unittest discover -s skills/mufeng-app-builder/tests -v
+.venv/bin/python -m unittest discover -s skills/mufeng-app-icon/tests -v
 ```
 
 Windows 使用 `.venv\Scripts\python.exe`。绘本 PDF 测试使用 macOS 默认字体。

@@ -1,6 +1,6 @@
 # Codex 与 Claude Code 兼容性
 
-全部 20 个 skill 共用同一份正文，并提供两端入口。`compatibility` 元数据声明执行条件，不安装依赖，也不表示已完成端到端测试。
+全部 21 个 skill 共用同一份正文，并提供两端入口。`compatibility` 元数据声明执行条件，不安装依赖，也不表示已完成端到端测试。
 
 | 能力 | Codex | Claude Code | 缺失时 |
 |---|---|---|---|
@@ -63,6 +63,10 @@ export MUFENG_WECHAT_SCRIPT="/path/to/baoyu-post-to-wechat/scripts/wechat-api.ts
 ## iOS 设计
 
 `mufeng-ios-design` 两端共用设计流程，不要求额外 MCP 或其他 skill。UI 实现按项目采用 SwiftUI/UIKit；原生验证依赖 macOS、Xcode 与可运行项目。简单图标可直接制作 SVG，生图依赖宿主实际可用工具。构建、截图、视觉查看和交互检查分别报告，不把 HTML 预览当成原生验证。
+
+## App icon 设计
+
+`mufeng-app-icon` 独立完成应用图标设计；两端共用正文和 Pillow 多尺寸预览脚本。生图使用宿主实际工具，未配置时可制作几何矢量或交付明确标注的概念。平面预览不模拟系统外观；Xcode/模拟器或设备检查另行报告。
 
 ## 环境与验证边界
 

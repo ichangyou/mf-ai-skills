@@ -1,0 +1,4 @@
+interface:
+  display_name: "沐风 · App 图标设计"
+  short_description: "基于真实产品设计 App icon，精修核心图形、制作多尺寸预览并验证平台适配"
+  default_prompt: "Use $mufeng-app-icon to design or refine my app icon from real product context, compare visual directions, and deliver source artwork with small-size previews and honest verification."

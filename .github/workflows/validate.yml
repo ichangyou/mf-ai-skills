@@ -18,6 +18,7 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: python scripts/validate.py
       - run: python -m unittest discover -s tests -v
+      - run: python -m unittest discover -s skills/mufeng-app-icon/tests -v
       - run: python -m unittest discover -s skills/mufeng-ios-app-opportunity/tests -v
   storybook:
     runs-on: macos-latest
