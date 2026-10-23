@@ -1,4 +1,4 @@
 interface:
-  display_name: "沐风 · iOS 起名与查重"
-  short_description: "App 英文名生成与 App Store、商标、域名五步查重"
+  display_name: "mufeng-ios-app-naming"
+  short_description: "iOS app naming with store, trademark and domain screening"
   default_prompt: "Use $mufeng-ios-app-naming to brainstorm English names for my iOS app, screen them against App Store, USPTO/TMview trademarks, domains and live websites, and recommend one with evidence."

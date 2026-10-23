@@ -1,4 +1,4 @@
 interface:
-  display_name: "沐风 · iOS 需求挖掘"
-  short_description: "App Store 竞品差评与低竞争方向挖掘"
+  display_name: "mufeng-ios-app-opportunity"
+  short_description: "Find iOS app opportunities from App Store reviews"
   default_prompt: "Use $mufeng-ios-app-opportunity to find weakly contested App Store categories and keywords, cluster 1-2 star reviews of popular apps, and recommend iOS app ideas with evidence."
