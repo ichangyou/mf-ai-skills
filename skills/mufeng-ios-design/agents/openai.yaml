@@ -1,4 +1,4 @@
 interface:
-  display_name: "沐风 · iOS 设计"
-  short_description: "基于真实项目优化原生 iOS 界面、设计 App icon 与 logo，并验证实际结果"
+  display_name: "mufeng-ios-design"
+  short_description: "Native iOS UI, app icons and logos with real verification"
   default_prompt: "Use $mufeng-ios-design to improve my native iOS UI or create an app icon or logo, using real project context and verifying the actual result."

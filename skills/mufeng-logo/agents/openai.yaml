@@ -1,4 +1,4 @@
 interface:
-  display_name: "沐风 · Logo 设计"
-  short_description: "基于真实品牌设计图形标、字标与组合，交付矢量源并检查单色、反白与小尺寸"
+  display_name: "mufeng-logo"
+  short_description: "Brand marks and wordmarks with editable vector delivery"
   default_prompt: "Use $mufeng-logo to design or refine an original brand logo, compare visual directions, and deliver editable source files with typography, monochrome and small-size verification."
