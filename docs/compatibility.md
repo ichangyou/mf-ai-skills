@@ -1,6 +1,6 @@
 # Codex 与 Claude Code 兼容性
 
-全部 18 个 skill 共用同一份正文，并提供两端入口。`compatibility` 元数据声明执行条件，不安装依赖，也不表示已完成端到端测试。
+全部 20 个 skill 共用同一份正文，并提供两端入口。`compatibility` 元数据声明执行条件，不安装依赖，也不表示已完成端到端测试。
 
 | 能力 | Codex | Claude Code | 缺失时 |
 |---|---|---|---|
@@ -59,6 +59,10 @@ export MUFENG_WECHAT_SCRIPT="/path/to/baoyu-post-to-wechat/scripts/wechat-api.ts
 通过 `MUFENG_WEREAD_X_HOME` 或 `--history` 选择位置；切换前迁移旧记录，避免生成两套历史。
 微信读书由已配置的 `weread-skills` 或 MCP 提供，仓库不包含它们。导出材料模式不需要账号接口。
 周报、月报只读取实际可访问材料；skill 指令不能自动获取其他会话历史。
+
+## iOS 设计
+
+`mufeng-ios-design` 两端共用设计流程，不要求额外 MCP 或其他 skill。UI 实现按项目采用 SwiftUI/UIKit；原生验证依赖 macOS、Xcode 与可运行项目。简单图标可直接制作 SVG，生图依赖宿主实际可用工具。构建、截图、视觉查看和交互检查分别报告，不把 HTML 预览当成原生验证。
 
 ## 环境与验证边界
 
