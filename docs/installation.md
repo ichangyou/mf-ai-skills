@@ -71,6 +71,20 @@ unlink ~/.agents/skills/mufeng-book-notes
 Claude Code 使用 `~/.claude/skills/<name>`。复制模式先备份并确认内容，再自行删除该 skill 目录。
 历史仓库级 `.codex/skills/` 已迁移为 `.agents/skills/`。个人旧安装请按本文重新安装，确认新入口可调用后再清理旧入口，避免重复。
 
+## 同名 skill 重复显示
+
+先核对重复条目的 `SKILL.md`、实际路径、脚本和参考文件，不能只按显示名称删除。除顶层安装外，也检查 `~/.agents/skills/synced/` 下的同名副本和旧 `~/.codex/skills/` 入口。
+
+确认使用本仓库版本后，将旧副本移到扫描目录之外，例如 `~/.local/share/mf-ai-skills/backups/`，保留原路径和差异记录。不要把备份留在任何 `skills/` 目录下，改名后仍可能被发现。仅清理已确认重复的旧链接，不影响其他 skills，也不移动历史数据文件。
+
+重新运行单个 skill 的安装命令：
+
+```bash
+python3 scripts/install.py --platform both --scope user --skill mufeng-weread-x-writing
+```
+
+核对两个客户端入口均指向仓库 `skills/mufeng-weread-x-writing/`，并确认 Codex 扫描范围没有第二份同名定义，然后重新加载客户端。若同步工具再次生成副本，需要在该工具中调整同步来源；本仓库安装器不管理其他工具的同步配置。
+
 ## Marketplace 与官方依据
 
 当前没有 marketplace 清单，不要将本仓库配置进 `extraKnownMarketplaces`。未来提供市场发布时会补齐清单与命名空间说明。
