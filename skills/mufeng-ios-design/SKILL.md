@@ -15,7 +15,7 @@ compatibility: "Codex and Claude Code. UI implementation verification needs macO
 先从实际加载的本文件所在目录解析相对路径，只读当前任务需要的参考：
 
 - 原生页面、组件、交互或视觉优化：[原生界面](references/native-ui.md)。
-- App icon、界面图标或原创品牌 logo：[图标与标志](references/icon-logo.md)。独立 App icon 任务可优先使用已安装的 `mufeng-app-icon`；未安装时仍按本文件执行。
+- App icon、界面图标或原创品牌 logo：[图标与标志](references/icon-logo.md)。独立 App icon 任务可优先使用已安装的 `mufeng-app-icon`；独立 Logo 任务可优先使用已安装的 `mufeng-logo`。专项 skill 未安装时仍按本文件执行。
 - 进入实现或交付前：[验证与证据](references/verification.md)。
 
 同时涉及页面和品牌时，先统一品牌规范，再应用到请求范围内的界面。
