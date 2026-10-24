@@ -30,7 +30,7 @@ Read [references/platforms.md](references/platforms.md) before generating images
 - Every generated or substantially revised article must pass the evidence and authenticity gate: real screenshots when available, an evidence-backed case with clear attribution, at least one failure/lesson/limitation, and 2-3 authoritative sources. Use first-person experience only when supported by the author's actual experience.
 - Before publishing, pass the originality, account-fit, title-integrity, and low-quality-content gates. Revise failures; stop before publishing when a material failure cannot be fixed from available evidence.
 - Every generated Markdown article must be Emoji-free. Do not add any AI-assist, AI-generated, or model-use declaration to the article body or footer.
-- Prefer Codex built-in image generation when available. On Claude Code, use an explicitly configured image skill/tool; do not silently select a provider. If none is available, save the article and report the missing image dependency. Immediately copy every adopted image into the project, verify the copy, and only then upload it.
+- Resolve image providers from the current user instruction and applicable AGENTS.md first. Otherwise prefer the host tools described in `references/platforms.md`: Codex built-in generation when available, or an explicitly configured image tool on Claude Code. Do not silently switch providers or impose a Google-first fallback. If no image tool is available, keep the local article and prompts and report the missing dependency. Immediately copy adopted images into the project and verify them before continuing.
 - Do not use generated images as replacements for real screenshots. Real screenshots are evidence assets; never fabricate Codex, Claude, revenue, analytics, or project UI screenshots.
 - Default generated visuals to a restrained, article-specific technical-editorial direction. Do not default to neon gradients, glowing networks, floating interfaces, glossy 3D objects, robots, brains, circuit heads, or other recognizable generative-AI clichés.
 - Save generated images as PNG. If a generated asset is not PNG, convert it to PNG before upload.
@@ -71,34 +71,11 @@ Non-goals:
 - If the `mufeng-blog-writing` footer rule is used, keep only the timestamp and location. Omit all AI-assist declarations.
 - Before publishing, scan the final Markdown for Emoji and AI-assist declarations. Remove every match and re-check.
 
-## Technical Blog Image Art Direction
+## Shared Visual Direction and Layout
 
-Apply these rules to every generated cover and inline illustration:
+Before planning images or formatting the article, read [沐风统一视觉规范](../mufeng-blog-writing/references/visual-style.md). It is the shared visual reference for this workflow and `mufeng-wechat-publish-full`.
 
-- Derive the visual from the article's concrete subject, system relationship, tool, or decision. Extract 2-4 topic-specific nouns before prompting; do not substitute a generic `AI + code + network` scene.
-- When recent covers or illustrations are readily available locally, inspect 6-10 relevant examples before generating. Identify repeated palettes, compositions, materials, and metaphors, then choose a meaningfully different direction unless a fixed brand treatment requires continuity.
-- Choose the visual form by function:
-  - Use a restrained editorial schematic for architecture, data flow, state, synchronization, dependencies, or comparisons.
-  - Use a quiet technical still life or product-like composition for tools, hardware, workflows, and concrete objects.
-  - Use a minimal geometric or print-editorial metaphor for abstract decisions, constraints, tradeoffs, and failure modes.
-  - Use a real screenshot or a deterministic locally rendered diagram when exact UI, code, labels, arrow directions, or numeric relationships matter. Do not ask ImageGen to invent precision.
-- Keep the visual language simple and elegant: one focal idea, ample negative space, clear hierarchy, balanced asymmetry or a disciplined grid, consistent geometry, and only enough detail to explain the concept.
-- Use a restrained palette of 2-4 colors. Prefer warm white, paper, stone, ink, graphite, or other quiet neutrals with one muted accent; use stronger colors only when the subject genuinely calls for them.
-- Prefer tactile, believable materials and subtle texture such as paper grain, matte metal, glass, or soft natural shadow. Preserve small physical imperfections when they make a still life feel authored rather than synthetic.
-- Avoid the common generative-AI look: blue-purple neon gradients, cyan glow, luminous network nodes, holograms, floating dashboards, glassmorphism, glossy plastic, chrome blobs, excessive 3D, isometric server stacks, robots, humanoid brains, circuit-board heads, random particles, light trails, impossible architecture, cinematic bloom, dramatic sci-fi lighting, and dense ornamental detail.
-- Keep a single article visually coherent without cloning the same composition. The cover and inline illustrations may share palette or line language, but vary framing and make each image perform a distinct explanatory job.
-- Do not use a centered glowing object on a dark gradient as the default cover. Favor light or neutral grounds unless the topic specifically benefits from a dark treatment.
-- Keep all generated visuals text-free unless the user explicitly requests text. Put exact terminology, captions, and explanations in Markdown.
-
-Build each ImageGen prompt from these fields:
-
-1. **Purpose:** cover or the exact nearby concept the image must explain.
-2. **Concrete subject:** the topic-specific objects, components, or relationship to depict.
-3. **Visual form:** editorial schematic, technical still life, restrained geometric illustration, or another justified form.
-4. **Composition:** aspect ratio, focal placement, negative space, hierarchy, and camera/viewpoint when relevant.
-5. **Palette and material:** 2-4 named colors plus paper, ink, metal, glass, or another restrained material language.
-6. **Rendering constraints:** text-free, no watermark, no fake UI, clean edges, technically plausible relationships.
-7. **Exclusions:** list the relevant AI clichés from the prohibition above, plus any palette or composition already overused in recent local images.
+Apply its modern humanistic editorial direction, topic variants, composition rules, prompt records, layout defaults and thumbnail/mobile checks. Use a complete text-free cover by default; a separately typeset title is optional. Keep exact diagrams deterministic and evidence screenshots authentic. Preserve explicit user choices and record unsupported layout differences rather than editing the publisher or changing the publication path.
 
 ## Technical Explainer Contract
 
@@ -272,26 +249,24 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/s
 3. Read the generated article and make an image plan.
    - Use one cover image.
    - Prioritize real screenshots for evidence-heavy sections. Use generated illustrations only for the cover or for ideas that cannot be shown with real artifacts.
-   - For every generated visual, record its purpose, concrete topic-specific subject, chosen visual form, composition, restrained palette/material language, and exclusions.
-   - Inspect 6-10 recent relevant local covers or illustrations when available, and avoid repeating their dominant palette, centered-object layout, or metaphor.
+   - Use the shared visual reference to select the topic variant and record each image's purpose, main relationship, composition, palette and references. Compare relevant local images when available; retain brand continuity without repeating the same metaphor.
    - Add inline screenshots or illustrations at natural breakpoints: after the opening setup, before dense technical sections, after major H2 sections, or near claims that need visual proof.
    - Avoid inserting images inside code blocks, tables, lists, blockquotes, or YAML frontmatter.
-   - For short articles, use 1-2 inline visuals. For long articles, use roughly one visual per 600-900 Chinese characters or per major section, capped unless the user asks for many.
+   - Choose image count by explanatory or evidence value, not character intervals or section count. Omit inline illustrations that add nothing beyond the text.
 
 4. Prepare PNG image assets.
    - Recommended local layout: `imgs/<article-slug>/cover.png`, `imgs/<article-slug>/shot-01.png`, `imgs/<article-slug>/fig-01.png`.
    - Copy, redact, crop, or convert real screenshots into this folder as PNGs. Keep screenshot filenames distinct from generated figure filenames.
-   - Generate cover and optional illustration PNGs with Codex image generation.
-   - Build each prompt with the seven fields in `Technical Blog Image Art Direction`; include the specific article concept and explicit exclusions instead of asking only for an `editorial/tech` image.
-   - For the cover, use a wide 2.35:1 or 16:9 composition with a clear focal idea, generous negative space, a restrained 2-4-color palette, and no text.
-   - For inline illustrations, explain exactly one nearby idea. Prefer a precise schematic, quiet still life, or minimal print-editorial metaphor over generic abstract system visuals.
+   - Generate cover and optional illustration PNGs with the resolved provider. Save the complete prompt before generation and keep every adopted image in the project as required by the shared visual reference.
+   - Default to one main relationship, flat editorial or light print texture, and a complete text-free cover. Use the shared reference for aspect ratio, crop-safe composition and optional separate title typesetting; do not reserve unused title space.
+   - For inline illustrations, explain exactly one nearby idea using the topic variant in the shared reference.
    - If exact labels, arrows, UI states, code, or numeric relationships are essential, use a verified screenshot or render a deterministic diagram locally and save it as PNG; do not rely on ImageGen for exact technical notation.
 
 5. Validate image files, article evidence, search alignment, and content quality.
    - Confirm each image asset exists, is non-empty, and is PNG.
    - Prefer keeping each PNG under 5 MB. Compress or resize only if upload/publish tools reject the file.
    - Confirm generated visuals are article-specific, restrained, legible at article width, and free of the prohibited AI clichés. Reject and regenerate generic neon/glowing-network/floating-UI/glossy-3D results.
-   - Compare generated visuals with the recent local examples inspected in the image plan. Regenerate when the dominant palette, central composition, or metaphor is substantially the same without a topic-driven reason.
+   - Run the shared reference's thumbnail and crop checks on the actual images. Keep brand colors consistent; revise repetitive metaphors or unreadable compositions. Record missing references or previews honestly.
    - Confirm the article includes: real screenshots when available, a clearly attributed case, failure/lesson/limitation, and 2-3 authoritative sources.
    - Confirm no `真实开发过程` or equivalent meta-production section remains in the article.
    - Confirm visible `参考资料` entries contain no access-date wording or appended access dates.
@@ -346,6 +321,7 @@ python3 "$SKILL_DIR/scripts/upload_github_images.py" \
    - Preserve existing user content and formatting.
 
 8. Upload and verify a WeChat Official Account draft.
+   - Resolve theme/color using the shared visual reference. The command below is the default starting point only; substitute explicit user, article or account preferences. Before upload, inspect local rendered previews at 375px and 430px and record unsupported layout differences. Keep the final Markdown as the publishing input.
    - Read `$HOME/.baoyu-skills/baoyu-post-to-wechat/EXTEND.md` if present for defaults.
    - Follow `mufeng-wechat-publish-full` for API draft upload and verification. “发布到公众号” defaults to a draft, not public publication or mass sending.
    - Use API; do not open the backend or invoke browser automation/Computer Use unless the user explicitly requests browser operation. A saved browser preference or an API error alone does not authorize switching.
@@ -356,7 +332,8 @@ python3 "$SKILL_DIR/scripts/upload_github_images.py" \
 bun "$MUFENG_WECHAT_SCRIPT" \
   <article.md> \
   --account <account-alias> \
-  --theme default \
+  --theme modern \
+  --color '#59766C' \
   --author changyou \
   --cover <cover-url>
 ```
@@ -391,7 +368,7 @@ Do not publish until this checklist has been checked against the final Markdown:
 - [ ] At least one real screenshot is included when available, and every screenshot is redacted as needed.
 - [ ] Generated images are used only as cover/illustrations, not as fake product, revenue, Codex, or Claude screenshots.
 - [ ] Each generated visual is tied to a concrete article concept, uses a restrained 2-4-color palette and clear hierarchy, and avoids the prohibited AI clichés.
-- [ ] Recent relevant local images were compared when available; the new cover does not repeat their dominant palette, centered-object composition, or metaphor without a topic-driven reason.
+- [ ] Shared visual reference applied; complete cover, thumbnail/crop checks and 375px/430px layout previews checked on actual artifacts, or missing checks explicitly recorded. Local references were compared when available; brand consistency does not require a different palette each time.
 - [ ] The article contains a concrete evidence-backed case with accurate attribution; current verification experiments and external cases are not presented as the author's personal history.
 - [ ] The article includes at least one failure case, limitation, wrong turn, or lesson learned.
 - [ ] The article contains no `真实开发过程`, `材料整理过程`, `证据链合成过程`, or equivalent meta-production section.

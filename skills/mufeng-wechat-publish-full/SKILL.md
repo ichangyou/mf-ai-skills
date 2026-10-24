@@ -110,21 +110,13 @@ Every generated or revised WeChat article must end with one short topic-specific
 
 默认上传草稿不受时段限制。用户要求立即处理时，继续上传；只有用户明确要求定时正式发布时才处理发布时间。
 
-### Cover Image (封面图)
+### Cover Image and Shared Layout (封面与统一排版)
 
-封面图决定分享卡片点击率：
-- **比例**：2.35:1（横版）用于文章列表；1:1 用于分享卡片
-- **生成策略**：imagegen 只生成无文字专业背景；标题关键词（3-6 个字）必须用 HTML/CSS 或后期 overlay 添加
-- **视觉方向**：专业技术媒体配图；真实、克制、留白充足；避免一眼看出是 AI 科技海报
-- **禁止元素**：不要让 imagegen 生成中文、标题、UI、logo、人脸、手、机器人、发光电路、霓虹、粒子、全息屏、赛博风、假代码
-- **推荐封面 prompt 模板**：
+Before planning visuals or formatting, read [沐风统一视觉规范](../mufeng-blog-writing/references/visual-style.md). Use the same modern humanistic editorial direction and topic variants as `mufeng-materials-to-wechat-publish`.
 
-```text
-Professional editorial cover background for a Chinese software engineering article about [topic].
-Realistic but restrained tech workspace: laptop, notebook, subtle code editor shapes on screen, clean desk, natural light, muted neutral colors, precise composition, generous negative space for title overlay.
-No readable text, no logos, no Chinese characters, no fake UI, no people, no hands, no robots, no glowing circuits, no neon, no particles, no holograms, no cyberpunk style, no fantasy, no 3D plastic look.
-Aspect ratio 2.35:1.
-```
+- Default to a complete text-free cover, one main relationship and purposeful whitespace. Do not default to a desk/laptop still life or a nearly empty background waiting for a title.
+- A separately typeset title is optional. If requested, plan its area before generation; never ask the model to render readable text and then repair it by overpainting.
+- Apply the shared layout starting values, prompt records, project-local image storage and thumbnail/crop/mobile checks. Preserve explicit user preferences and report unsupported layout differences.
 
 ### Tags & Category (话题标签)
 
@@ -190,57 +182,18 @@ curl -fsS --max-time 15 https://api.ipify.org
 
 ## Stage 2: Image Generation
 
-**Prefer Google API (Gemini); fallback to DashScope if Google fails or quota is exhausted.**
+Resolve providers from the current user instruction and applicable AGENTS.md first. Otherwise use the host tools described in `references/platforms.md`: prefer Codex built-in generation when available; on Claude Code use an explicitly configured image tool. If no tool is available, preserve the local article and prompts and report the missing dependency. Do not silently switch services or impose a Google-first fallback; report an unavailable provider before any unapproved switch.
 
-For professional technical blog visuals, do not make imagegen explain technical concepts. Use this priority order for inline images:
+Read the shared visual reference linked above before preparing assets:
 
-1. Real screenshots: terminal output, IDE, config files, product UI, benchmark results
-2. Deterministic diagrams: Mermaid, SVG, HTML/CSS architecture diagrams, flowcharts, comparison tables
-3. Code snippet screenshots with clean typography and a short caption
-4. Imagegen only for cover backgrounds or subtle section illustrations
+1. Inventory authentic screenshots and source documents. Keep them as evidence; crop or redact only with necessary context retained.
+2. Choose each image by its job: cover, explanation or evidence. Use deterministic diagrams for precise labels, arrows, UI, code and numeric relationships. Do not require a fixed image count or code screenshots merely to decorate an article.
+3. Select the topic variant, one main visual relationship, palette and composition. Default generated artwork to flat editorial or light print texture; use photography or still life only when the subject benefits.
+4. Save each complete prompt and adopted references in the current project before generation. Generate a complete text-free cover; add a separate title layout only when requested.
+5. Verify project-local PNGs before referencing them. For built-in ImageGen, recursively verify the generated source, immediately copy to the project and verify the non-empty copy before proceeding to another image.
+6. Check actual 320px thumbnails, banner and central square crops. Inspect readability and palette coherence; revise cluttered, gray/muddy or meaningless compositions as well as prohibited neon/fake-UI/glossy-3D imagery. Record what was checked and what remains unverified.
 
-Use imagegen for cover backgrounds only after deciding the topic and title. Generated covers must be background-only: no readable text, no Chinese characters, no fake UI, no logo, no people, no hands. Add title keywords later with deterministic HTML/CSS or image editing overlay.
-
-### Visual Presets
-
-Pick one preset before creating any image:
-
-- `editorial-workspace`: Realistic desk, laptop, notebook, blurred code editor, natural light, muted neutral colors
-- `clean-technical-diagram`: Mermaid/SVG/HTML diagram; do not use imagegen
-- `product-screenshot-composite`: Real screenshot plus simple annotations on a clean background
-- `minimal-cover-background`: Spacious editorial background with large empty area for title overlay
-- `conceptual-object`: Concrete object metaphor such as blocks, routing cards, folders, pipeline nodes, or decision boards; no sci-fi elements
-
-### AI-Look Rejection Filter
-
-After image generation, inspect the image. Reject and regenerate if any of these appear:
-
-- Glowing circuits, blue-purple neon, particle streams, holograms, cyberpunk lighting
-- Fake code, garbled text, fake Chinese, fake UI, fake logos
-- Overly glossy 3D icons or plastic-looking objects
-- Floating UI panels or impossible screen elements
-- Robots, faces, hands, or human figures
-- Overcrowded composition with no negative space for title overlay
-- Anything that looks like a Midjourney tech poster instead of a professional technical media image
-
-Use the `content-skills:baoyu-image-gen` skill only when the image passes the visual strategy above. By default, it will use your preferred provider. To force a fallback:
-
-```bash
-# Try Google first (default behavior or explicit)
-bun run image-gen --prompt "..." --aspect-ratio 16:9
-
-# Fallback to DashScope if Google fails
-bun run image-gen --provider dashscope --prompt "..." --aspect-ratio 16:9
-```
-
-Failure modes:
-- [ ] Google API fails/quota exceeded → fallback to DashScope
-- [ ] Chinese text in image is garbled/blurry → never embed Chinese in generated images; use overlay text in HTML/CSS or post-processing
-- [ ] Cover looks AI-generated → remove sci-fi terms from the prompt, choose `minimal-cover-background` or `editorial-workspace`, and regenerate
-- [ ] Inline image needs to explain architecture/process → use Mermaid/SVG/HTML instead of imagegen
-- [ ] DashScope quota exceeded → check DashScope console; switch model tier or wait
-- [ ] Image returned but too small → specify `--quality 2k` or `--quality 4k`
-- [ ] No image output, no error → API endpoint timeout; retry once; if still failing, check API key
+A generation error does not authorize changing providers. Diagnose the actual response and report the failed item; do not regenerate successful assets or upload a draft merely to test an image.
 
 ---
 
@@ -314,13 +267,14 @@ Failure modes:
 
 ### Preferred: Direct Markdown Publish
 
-Read `$HOME/.baoyu-skills/baoyu-post-to-wechat/EXTEND.md` if present for local defaults. Publish the final Markdown file directly:
+Read `$HOME/.baoyu-skills/baoyu-post-to-wechat/EXTEND.md` if present for local defaults. Resolve theme/color using the shared visual reference: explicit user, article and account preferences take precedence; otherwise start with `modern` and `#59766C`. Check supported renderer options and inspect local 375px/430px previews before upload, recording unsupported layout differences. Keep the final Markdown as the publication input; the following command shows the default starting point:
 
 ```bash
 bun "$MUFENG_WECHAT_SCRIPT" \
   <article.md> \
   --account <account-alias> \
-  --theme default \
+  --theme modern \
+  --color '#59766C' \
   --author changyou \
   --cover <cover-url>
 ```
@@ -372,7 +326,7 @@ Run through this in order before every publish:
 - [ ] **Title**: 18-24 字，首词为 AI 热词，无标题党措辞，含数字或具体场景
 - [ ] **Opening**: 前 150 字直接给出核心价值，无背景铺垫
 - [ ] **Images**: 配图必须服务内容；优先真实截图、Mermaid/SVG/HTML 图解、代码截图；imagegen 只用于封面背景或少量章节氛围图
-- [ ] **Cover**: imagegen 只生成无文字背景；标题关键词用 HTML/CSS 或后期 overlay；生成图不得包含中文、logo、假 UI、假代码、人脸、手、机器人
+- [ ] **Cover**: 默认完整无字封面；标题仅在需要时独立排版；已按统一规范检查缩略图、横幅及中心方形裁切，避免无效留白和物件堆叠
 - [ ] **Frontmatter**: Markdown has `title`, `slug`, `author`, `date`, `category`, `summary`, `tags`, and `coverImage`
 - [ ] **Ending**: 结尾有主题相关 hook，且固定品牌 follow block 只出现一次
 - [ ] **Original**: 已设置并验证，或明确记录为待手动设置（不阻塞草稿上传）
@@ -381,8 +335,8 @@ Run through this in order before every publish:
 
 **Technical:**
 - [ ] **IP**: Egress IP recorded where available; API error inspected without requiring backend UI pre-check
-- [ ] **Images**: Generated with Google (primary) or DashScope (fallback) only when deterministic visuals are not better
-- [ ] **Images**: AI-look filter passed; no neon/circuits/particles/holograms/fake UI/fake code/garbled text/glossy 3D poster style
+- [ ] **Images**: Provider follows current user instructions and applicable AGENTS.md; otherwise follows the host-specific tools in `references/platforms.md`, with no unapproved fallback. Prompts and adopted assets are stored in the project.
+- [ ] **Images and layout**: Shared visual checks run on actual assets and local 375px/430px previews; any missing checks or unsupported theme values explicitly reported, with no claim of visual validation before preview.
 - [ ] **Images**: Uploaded to `mf-blog/blogPictures/main/images/<article-slug>`; raw HTTPS URLs verified with `curl -I <url>` returning 200
 - [ ] **Markdown publish**: Final `.md` file is used directly with `wechat-api.ts`
 - [ ] **HTML fallback**: If HTML publishing is used, SVG blocks and `<a>`, `<script>`, `<style>`, `<iframe>` tags are sanitized
@@ -399,7 +353,7 @@ Run through this in order before every publish:
 | Content strategy | 标题 18-26 字 + AI 热词前置；前 150 字直给价值；结尾引导"在看" | 用标题党措辞；从背景铺垫开篇 |
 | Timing | 草稿随时上传；时段建议需账号数据验证 | 为等待推荐时段阻塞草稿上传 |
 | IP check | 记录出口 IP，按实际 API 错误排查 | 强制打开后台，或把所有 401/403 当成白名单错误 |
-| Image gen | 封面只生成无文字背景；正文优先截图/图解/代码截图；通过 AI-look filter | 用霓虹、电路、粒子、假 UI 做科技海报 |
+| Image gen | 统一视觉规范；完整无字封面；正文按解释与证据需要配图；实际检查裁切和手机预览 | 无效留白、灰暗物件堆叠、伪 UI；未预览就声称验证通过 |
 | Frontmatter | `slug/category/summary/tags/coverImage` present before publishing | Only putting summary/tags in body |
 | GitHub upload | Fixed `mf-blog/blogPictures` path, helper script, HTTPS raw URL | Reusing filename manually → 422 error |
 | HTML sanitize | Fallback only; strip SVG + `<a>` tags | Pre-converting Markdown unnecessarily |
