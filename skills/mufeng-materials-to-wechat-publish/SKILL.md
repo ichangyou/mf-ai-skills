@@ -32,7 +32,7 @@ Read [references/platforms.md](references/platforms.md) before generating images
 - Every generated Markdown article must be Emoji-free. Do not add any AI-assist, AI-generated, or model-use declaration to the article body or footer.
 - Default cover generation to Codex built-in ImageGen (`image_gen`) and proceed directly without asking for provider confirmation. This is the user's standing preference for this workflow: do not follow a legacy DashScope / Pollinations / Gemini fallback chain for covers, and do not ask the user to approve switching from that chain to built-in ImageGen. Only use a different cover provider when the user explicitly requests it in the current task. If built-in ImageGen is unavailable or fails, report the failure; do not silently switch to another provider or CLI/API path. Immediately copy adopted images into the project and verify them before continuing. For host-specific availability, read `references/platforms.md`; platform guidance does not authorize silently substituting another provider.
 - Do not use generated images as replacements for real screenshots. Real screenshots are evidence assets; never fabricate Codex, Claude, revenue, analytics, or project UI screenshots.
-- For technical articles, use the Technical Visual Profile below instead of the shared humanistic/printmaking illustration default. Prefer precise engineering graphics with topic-specific relationships; exclude decorative people, plants and paper texture. Do not default to neon gradients, glowing networks, floating interfaces, glossy 3D objects, robots, brains, circuit heads, or other recognizable generative-AI clichés.
+- For technical articles, use the Technical Visual Profile below to choose a recognizable subject before choosing a visual style. Engineering graphics are an option, not a mandatory cover style. Exclude unrelated decorative people, plants and paper texture. Do not default to neon gradients, glowing networks, floating interfaces, glossy 3D objects, robots, brains, circuit heads, or other recognizable generative-AI clichés.
 - Save generated images as PNG. If a generated asset is not PNG, convert it to PNG before upload.
 - Keep generated images free of readable UI text, Chinese text, labels, captions, watermarks, and signatures unless the user explicitly requests text in the image. Put titles/captions in Markdown instead.
 - Do not add a `真实开发过程` section or any equivalent meta-production section about how materials, logs, commands, research, or screenshots were assembled into the article. Keep reader-relevant evidence inside the topical sections and keep workflow notes in the completion report.
@@ -77,30 +77,31 @@ Before planning images or formatting the article, read [沐风统一视觉规范
 
 Apply its composition rules, prompt records, layout defaults and thumbnail/mobile checks. For technical articles, the Technical Visual Profile below overrides its modern humanistic, paper-textured and hand-rendered visual defaults; non-technical articles retain the shared topic variants. Use a complete text-free cover by default; a separately typeset title is optional. Keep exact diagrams deterministic and evidence screenshots authentic. Preserve explicit user choices and record unsupported layout differences rather than editing the publisher or changing the publication path.
 
-## Technical Visual Profile — 浅底工程图解
+## Technical Visual Profile — 主题识别优先
 
 ### 适用范围与偏好依据
 
-技术工具、AI 编程、API、框架、协议、架构与工程方法文章默认使用本节。用户已明确不满意此前技术文章的插画风格，因此不再沿用“人物＋植物＋纸卡片＋纸纹”的人文插画方向。此规则是工作流内的默认选型，不要求用户每篇重新确认；当前任务有明确风格要求时以该要求为准。尚未经过新一轮样图验证，不宣称这是用户已验收的视觉效果。
+技术工具、AI 编程、API、框架、协议、架构与工程方法文章使用本节选择图片任务与主体，不固定为同一种画法。封面先建立主题印象，正文图再解释机制；不默认沿用“人物＋植物＋纸卡片＋纸纹”的装饰组合，也不默认退化成白底抽象线段。当前任务有明确风格要求时以该要求为准。规则调整尚未经过新一轮样图验证，不宣称用户已验收视觉效果。
 
 参考宝玉规则中的可用部分，而非整体套用其生图工作流：
 
-- `baoyu-cover-image/references/types.md`：技术封面选 `conceptual`，让核心概念成为主体。
-- `baoyu-cover-image/references/palettes/cool.md` 与 `mono.md`：采用浅底、深色线条和单一强调色。
-- `baoyu-article-illustrator/references/styles/blueprint.md`：采用网格对齐、统一线宽、几何精度、直线或直角连线。
+- `baoyu-cover-image/references/types.md`：`conceptual` 是可选类型；先判断主体能否让读者识别主题，再选择表现方式。
+- `baoyu-cover-image/references/palettes/cool.md` 与 `mono.md`：浅底、深色线条和单一强调色是可选色板，不要求所有技术封面同色同形。
+- `baoyu-article-illustrator/references/styles/blueprint.md`：工程图需要时采用网格对齐、统一线宽、几何精度和有意义的连接；不将其强制用于封面。
 - `baoyu-article-illustrator/references/styles/editorial.md`：采用清楚的信息层级与因果叙事，不照搬多区块信息图或装饰图标。
 - 不直接套用 `flat-vector` 的 toy-model、可爱圆角和装饰元素；不默认使用 `warm`、`watercolor`、`sketch-notes`、`hand-drawn` 或 `screen-print`。
 
 参考文件位于宝玉插件的对应 skill `references/` 下；路径变化时按文件名定位。只借鉴视觉维度，不因此导入额外确认、提供方回退或批量生图要求。封面仍默认内置 ImageGen 直接生成。
 
-### 封面：表达一个技术关系
+### 封面：先选可识别的主题主体
 
-- 默认组合：`conceptual × blueprint-inspired precision × cool/mono × text-none × subtle`。这是本工作流对宝玉维度的组合，不是宝玉现成预设或额外 CLI 参数。
-- 背景白 `#FFFFFF` 或极浅灰 `#F8FAFC`；主体深灰蓝 `#1E293B`；强调色默认工程蓝 `#2563EB`。需要承接既有品牌时可用青绿 `#59766C` 替换蓝色，同图不混用两种主强调色。正文排版颜色无需随封面改变。
-- 平面、边缘清楚、线宽一致；以网格组织主体，弱化外框。背景默认无纹理；只有确有助于结构阅读时才使用极淡网格，不添加假尺寸线、假刻度、伪数据或伪代码。
-- 先写出“这张图表达哪一个技术关系”，再选物象。共享上下文可画一个公共基座与三个消费模块；加载机制可画分层展开；修复问题可画受阻路径与恢复路径。每次按材料中的机制选型，不能所有主题都画文件卡片或节点网络。
+- 先写出“读者不看标题和提示词，能从画面认出什么主题”，选择与材料直接相关的主体，再确定画法、色板和辅助关系。例如 PDF 阅读主题可选择具有页面与扫描内容特征的文档主体，配合检查局部的视觉关系；不伪造产品界面或实际分析结果。
+- `conceptual × blueprint-inspired precision × cool/mono × text-none × subtle` 仅为可选工程方向，不是默认组合。可按主题采用有明确物象的编辑插画、剖面或局部放大等形式；不为改变风格添加无关装饰。
+- 选择工程方向时，可用白或极浅灰背景、深灰蓝主体和工程蓝强调；需要品牌延续时可用青绿。其他方向仍使用克制的 2–4 色和清楚的明暗层级，正文排版颜色无需随封面改变。
+- 工程图保持边缘清楚、线宽一致，不添加假尺寸线、假刻度、伪数据或伪代码。不要把“无纹理、少颜色”理解成“只能画几根线”。
+- 不默认用无标签的时序图、寿命图、坐标线或节点关系图作封面。如果删掉标签就无法理解其含义，应改作带准确标签的确定性正文图，封面另选可识别主体。不能所有主题都画文件卡片或节点网络。
 - 封面为概念隐喻，不作为精确架构证据。只有核实的依赖、顺序和方向才可用箭头表达；无依据时仅表达分组或关联。不能让画面暗示已实现自动调度、性能提升或收入增长。
-- 无文字封面本身构图完整，不预留半张标题空白。默认 2.35:1，关键技术关系完整落在中心方形安全区；边缘只能放可裁掉的次要元素。320px 缩略下仍须看清核心关系。
+- 无文字封面本身构图完整，不预留半张标题空白。默认 2.35:1，主体应充分占据横幅的有效画面，中心方形优先保留识别主题必需的部分，不要求所有辅助关系都塞入方形。裁切冲突时重新构图或按实际渠道需要另做方形版本；禁止通过整体缩小主体解决裁切。320px 缩略下仍应认出主体与主题线索。
 - 技术封面默认不画人物、手、面孔、植物、树叶、盆栽、书桌、咖啡、书本、文具、纸张折角、手绘涂鸦、复古纸纹、颗粒版画、水彩或生活方式场景。文章确实讨论其中对象时才可采用，且须记录它的解释用途。
 - 不生成 Logo、产品界面、终端截图或代码截图；不添加无意义的图标散布、装饰连接线、发光边缘或立体塑料材质。
 
@@ -119,17 +120,18 @@ Apply its composition rules, prompt records, layout defaults and thumbnail/mobil
 
 ### 提示词必须包含的约束
 
-每张图仍先保存完整提示词。记录用途、图类型、核心关系、事实依据、构图与裁切、色板、参考和禁用项。技术封面提示词避免 `humanistic editorial illustration`、`warm paper`、`printmaking`、`handcrafted` 等容易带回旧风格的措辞。
+每张图仍先保存完整提示词。记录用途、可识别主体、图类型、核心关系、事实依据、构图与裁切、色板、参考和禁用项。先明确要画什么，再写必要约束，不用长串禁用项代替主体设计。只有实际选择工程方向时才加入 blueprint、uniform strokes 等画法词，不机械套用；不默认带回旧的人物植物和纸纹装饰组合。
 
 可用模板（将方括号替换为具体内容，不能原样提交）：
 
-> Text-free technical editorial cover about [specific topic]. Show exactly [one verified relationship or clearly conceptual metaphor] using [topic-specific geometric structures]. Blueprint-inspired engineering precision, crisp 2D geometry, uniform thin strokes, grid-aligned hierarchy, straight or orthogonal connectors only where meaningful. Pure white or very light gray background, deep slate outlines, engineering blue as the only accent. Complete balanced 2.35:1 composition; keep the entire core relationship inside the central square crop-safe area and readable at 320px. Flat solid fills, no paper texture, no grain, no watercolor, no sketch, no people, faces, hands, plants, leaves, lifestyle props, folded paper cards, decorative icons, fake UI, fake code, logos, text, labels, numbers, watermark, neon, glow or glossy 3D. Do not add any subject or decoration beyond those specified.
+> Text-free editorial cover about [specific topic]. Make [recognizable topic-specific subject and its distinguishing features] the dominant subject, with [one meaningful supporting relationship]. Use [style chosen for this subject] and [restrained palette]. Compose a complete balanced 2.35:1 image with a substantial subject and purposeful negative space, readable at 320px. Keep the essential subject recognizable in a central square crop; recompose rather than shrinking the entire subject to fit every element inside that crop. No labels, watermark, fabricated UI, code, logos, measurements or unrelated decoration. Do not substitute an unlabeled chart or generic node network for the subject.
 
 ### 验收门禁
 
-- 逐项看实际图：是否回到人物植物、纸纹手绘、生活方式插画？有则拒用并针对偏离项改提示词重生成，不能仅因颜色符合就采用。
+- 隐去标题、图注和提示词，只看实际封面：能否认出与文章相关的主体或使用场景，而不只是“科技感”或几根线？无法识别则拒用并重选主体。此项是编辑自检，不冒充真实读者测试。
+- 逐项看实际图：是否出现无关人物植物、生活方式道具、装饰纸纹或通用抽象图标？有则拒用并针对偏离项改提示词重生成，不能仅因颜色符合就采用。
 - 把图与邻近段落对照：能否说出它解释的技术关系？若只剩“科技感”或“好看”，重新选图或省略正文图。
-- 查看 320px 缩略和中心方形裁切：核心关系必须完整；不能用“主体大致还在”掩盖关键模块被截断。
+- 查看横幅、320px 缩略和中心方形裁切：主题主体可识别，横幅没有因裁切兼容而缩成小图标。方形缺失识别所必需的部分时重新构图或另做版本，不能只验收线条完整。
 - 核实线条没有伪造关系，且没有幻觉标签、伪数据或伪 UI。封面概念图不冒充精确机制图。
 - 在交付记录中写明实际采用的维度、偏离项、重生成原因及未完成的视觉检查。规则检查不等于用户审美验收。
 
@@ -314,7 +316,7 @@ coverImage: https://raw.githubusercontent.com/mf-blog/blogPictures/main/images/s
    - Recommended local layout: `imgs/<article-slug>/cover.png`, `imgs/<article-slug>/shot-01.png`, `imgs/<article-slug>/fig-01.png`.
    - Copy, redact, crop, or convert real screenshots into this folder as PNGs. Keep screenshot filenames distinct from generated figure filenames.
    - Generate the cover directly with Codex built-in ImageGen by default; no provider-selection or switching confirmation is needed. Optional generated illustrations also default to built-in ImageGen unless the user specifies otherwise. Save the complete prompt before generation and keep every adopted image in the project as required by the shared visual reference.
-   - Default to one main relationship and a complete text-free cover. Technical articles must use the Technical Visual Profile: precise geometry, clean solid background and one accent, without paper/print texture or decorative humanistic elements. Use the shared reference for aspect ratio, crop-safe composition and optional separate title typesetting; do not reserve unused title space.
+   - Default to a complete text-free cover with a recognizable topic-specific subject and one supporting relationship. For technical articles, apply the Technical Visual Profile to choose the subject first; precise engineering geometry and a single accent are optional, not mandatory. Check topic recognition as well as crop safety; recompose instead of shrinking the subject. Do not reserve unused title space or use unrelated humanistic decoration.
    - For inline illustrations, explain exactly one nearby idea. For technical content, select screenshot, flowchart, framework, comparison, sequence or conceptual illustration using the Technical Visual Profile; non-technical content uses the shared topic variant.
    - If exact labels, arrows, UI states, code, or numeric relationships are essential, use a verified screenshot or render a deterministic diagram locally and save it as PNG; do not rely on ImageGen for exact technical notation.
 
